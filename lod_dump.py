@@ -6,6 +6,8 @@ from PIL import Image
 
 HDR_BITMAP =  48
 HDR_SPRITE =  32
+HDR_MAP6   =   8
+HDR_MAP7   =  16
 PAL_SIZE   = 768
 
 #################################### Functions #################################
@@ -98,23 +100,24 @@ if __name__ == "__main__":
 
         for sfile in files:
             try:
-                #if 'sky' not in sfile:
+                #if 'out01' not in sfile:
                 #    continue
                 logger.debug("loading {} -> {}/{}".format(lod_attr['filename'], lod_attr['dirname'],sfile))
                 f.seek(files[sfile]['offset'])
-                data = f.read(files[sfile]['size']) #save_file('dest/{0}.item'.format(sfile), data)
+                data = f.read(files[sfile]['size'])
+                save_file('dest/{0}.item'.format(sfile), data)
                 
                 if "bitmaps" in lod_attr['dirname'] or "icons" in lod_attr['dirname']:
                     s = struct.unpack_from('@16sIIHHHHHHHHII', data[:HDR_BITMAP]) # char name[16]; int off,size,unk,count;
                     files[sfile].update({'fullname': get_ful_filename(s[0]).lower(), 'size_img': s[1],
                                          'size_compressed': s[2], 'size_uncompressed': s[11],
                                          'width': s[3], 'height': s[4]})
-                    #pprint.pprint(files[sfile])
-
                     if files[sfile]['size_img'] == 0: # file is not an image.
                         r_data = data[HDR_BITMAP:]
                         if r_data[:2] == b'\x78\x9c': # if it's compressed, decompress
-                            r_data = zlib.decompress(r_data) # TODO check decomp_size
+                            r_data = zlib.decompress(r_data)
+                            if files[sfile]['size_uncompressed'] != len(r_data):
+                                logger.debug("decompressed file does not match header information") #TODO raise err
                         save_file('dest/{}'.format(files[sfile]['fullname']), r_data)
                     else: # file is a "tga" image ( not really a tga )
                         dec_data = zlib.decompress(data[HDR_BITMAP:-PAL_SIZE])
@@ -129,14 +132,12 @@ if __name__ == "__main__":
                     files[sfile].update({'width': s[4], 'height': s[5], 'pal': s[6],
                                          'size_compressed': s[3], 
                                          'size_uncompressed': s[10]})
-                    #pprint.pprint(files[sfile])
-                    
                     table_size = files[sfile]['height'] * 8
                     table_data = data[HDR_SPRITE:(HDR_SPRITE+table_size)]
                     dec_data = zlib.decompress(data[(table_size + HDR_SPRITE):])
                                   
-                    if len(dec_data) != files[sfile]['size_uncompressed']:
-                        logger.debug("decompressed file does not match header information {0}".format(s[11]))
+                    if files[sfile]['size_uncompressed'] != len(dec_data):
+                        logger.debug("decompressed file does not match header information") #TODO raise err
                     
                     img_data = [0] * (files[sfile]['width'] * files[sfile]['height'])
                     img_index = 0
@@ -167,10 +168,24 @@ if __name__ == "__main__":
                         logger.error("[current limitation], extract BITMAPS.LOD and put all .pal files in \"dest/palettes\"")
                         lod_attr['failed']=-1
                         break
-                elif "maps" in lod_attr['dirname']:
-                    continue
-                elif "chapter" in lod_attr['dirname']:
-                    continue
+                elif "maps" in lod_attr['dirname'] or "chapter" in lod_attr['dirname']:
+                    if data[:8] == b'\x41\x67\x01\x00\x6D\x76\x69\x69' and data[16:18] == b'\x78\x9C':
+                        hdr_size = HDR_MAP7
+                        s = struct.unpack_from('@IIII', data[:hdr_size])
+                        files[sfile].update({'version': 7, 'size_compressed': s[2],
+                                             'size_uncompressed': s[3]})
+                    elif data[8:10] == b'\x78\x9C':
+                        hdr_size = HDR_MAP6
+                        s = struct.unpack_from('@LL', data[:hdr_size])
+                        files[sfile].update({'version': 6, 'size_compressed': s[0],
+                                             'size_uncompressed': s[1]})
+                    else:
+                        save_file('dest/{}'.format(sfile), data)
+                        continue
+                    dec_data = zlib.decompress(data[hdr_size:])
+                    if files[sfile]['size_uncompressed'] != len(dec_data):
+                        logger.debug("decompressed file does not match header information") #TODO raise err
+                    save_file('dest/{}'.format(sfile), dec_data)
                 else:
                     print("can't handle this directory")
             except:
