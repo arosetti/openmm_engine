@@ -31,9 +31,11 @@ def get_filename(data):
     tmp = "{0}".format(chunks[0].decode('latin-1'))
     return tmp
 
-def get_ful_filename(data):
+def get_full_filename(data):
     chunks = data.split(b'\x00')
     tmp = "{0}.{1}".format(chunks[0].decode('latin-1'), chunks[1].decode('latin-1'))
+    if tmp.endswith('.'):
+        tmp = tmp[:-1]
     return tmp
 
 #################################### Main ######################################
@@ -109,7 +111,7 @@ if __name__ == "__main__":
                 
                 if "bitmaps" in lod_attr['dirname'] or "icons" in lod_attr['dirname']:
                     s = struct.unpack_from('@16sIIHHHHHHHHII', data[:HDR_BITMAP]) # char name[16]; int off,size,unk,count;
-                    files[sfile].update({'fullname': get_ful_filename(s[0]).lower(), 'size_img': s[1],
+                    files[sfile].update({'fullname': get_full_filename(s[0]).lower(), 'size_img': s[1],
                                          'size_compressed': s[2], 'size_uncompressed': s[11],
                                          'width': s[3], 'height': s[4]})
                     if files[sfile]['size_img'] == 0: # file is not an image.
@@ -157,17 +159,14 @@ if __name__ == "__main__":
                             img_index +=1
                     
                     palname = "dest/palettes/pal{0:0=3d}.pal".format(files[sfile]['pal'])
-                    if os.path.isfile(palname):   #TODO load from lod.
-                        fpal = open(palname, "rb")
-                        save_img('dest/{0}.bmp'.format(sfile),
-                                 array.array('B', img_data).tostring(), fpal.read(PAL_SIZE),
-                                 files[sfile]['width'], files[sfile]['height'])
-                        fpal.close()
-                    else:
+                    if not os.path.isfile(palname):   #TODO load from lod.
                         logger.error("error can't find palette -> {}".format(palname)) # TODO raise error
                         logger.error("[current limitation], extract BITMAPS.LOD and put all .pal files in \"dest/palettes\"")
-                        lod_attr['failed']=-1
-                        break
+                    fpal = open(palname, "rb")
+                    save_img('dest/{0}.bmp'.format(sfile),
+                             array.array('B', img_data).tostring(), fpal.read(PAL_SIZE),
+                             files[sfile]['width'], files[sfile]['height'])
+                    fpal.close()
                 elif "maps" in lod_attr['dirname'] or "chapter" in lod_attr['dirname']:
                     if data[:8] == b'\x41\x67\x01\x00\x6D\x76\x69\x69' and data[16:18] == b'\x78\x9C':
                         hdr_size = HDR_MAP7
@@ -191,6 +190,8 @@ if __name__ == "__main__":
             except:
                 logger.error("{0}".format(sys.exc_info()))
                 lod_attr['failed']+=1
+                if len(data) > 0:
+                    save_file('dest/{0}.failed'.format(sfile), data)
     except IOError as e:
         logger.error("I/O error({0}): {1}".format(e.errno, e.strerror))
     except:
