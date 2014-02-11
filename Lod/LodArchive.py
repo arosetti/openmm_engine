@@ -2,7 +2,7 @@ import sys, os, array, struct
 import logging, logging.config
 import zlib, pprint
 from PIL import Image
-   
+
 def get_img(data, h, w):
     img = Image.frombytes("P", (h, w), data, "raw", "P", 0, 1)
     return img.getdata()
@@ -207,10 +207,7 @@ class LodArchive(object):
 
     def SaveFiles(self, dest, filter=""):
         failed = 0
-        if not os.path.exists(dest):
-            os.makedirs(dest)  
-            os.makedirs("{}/palettes".format(dest)) 
         for sfile in self.files:
-            if filter in sfile and not self.SaveFile(dest, sfile):
+            if filter in sfile.lower() and not self.SaveFile(dest, sfile):
                 failed += 1
         return failed   

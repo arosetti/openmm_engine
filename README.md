@@ -25,10 +25,10 @@ WARNING2: tested on mm6,7,8 but a few files are still failing to be extracted.
 Testing
 ========
 You can play with the class methods, extract all data or search specific files.
+first run: ./lod_manager_test.py (extracts palettes to tmp)
+and then run: ./lod_archive_test.py
 
-run: ./lod_archive_test.py
 
-run: ./lod_manager_test.py
 
 Todo 
 ========

@@ -6,7 +6,7 @@ l = LodArchive('data/BITMAPS.LO') # this call is going to fail
 
 l = LodArchive('data/BITMAPS.LOD')
 
-dest = "dest"
+dest = "tmp"
 
 l.SaveFile(dest, "non_existent_file")
 l.SaveFile(dest, "sky17")
