@@ -1,4 +1,4 @@
-lod_dump 0.2
+lod_dump 0.2.1
 ========
 
 Might and Magic 6-7-8 LOD file extractor.
@@ -17,18 +17,13 @@ Requirements
 
 python3, pillow
 
-WARNING1: sprites.lod needs palette files .pal from bitmaps.lod.
-          put all those files from dest/ to dest/palettes/ manually
-
-WARNING2: tested on mm6,7,8 but a few files are still failing to be extracted.
+WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
 
 Testing
 ========
 You can play with the class methods, extract all data or search specific files.
-first run: ./lod_manager_test.py (extracts palettes to tmp)
-and then run: ./lod_archive_test.py
 
-
+run: ./lod_test.py
 
 Todo 
 ========
