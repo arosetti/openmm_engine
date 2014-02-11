@@ -176,7 +176,7 @@ if __name__ == "__main__":
                                              'size_uncompressed': s[3]})
                     elif data[8:10] == b'\x78\x9C':
                         hdr_size = HDR_MAP6
-                        s = struct.unpack_from('@LL', data[:hdr_size])
+                        s = struct.unpack_from('@II', data[:hdr_size])
                         files[sfile].update({'version': 6, 'size_compressed': s[0],
                                              'size_uncompressed': s[1]})
                     else:
