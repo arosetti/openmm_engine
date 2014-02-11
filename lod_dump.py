@@ -105,7 +105,7 @@ if __name__ == "__main__":
                 logger.debug("loading {} -> {}/{}".format(lod_attr['filename'], lod_attr['dirname'],sfile))
                 f.seek(files[sfile]['offset'])
                 data = f.read(files[sfile]['size'])
-                save_file('dest/{0}.item'.format(sfile), data)
+                #save_file('dest/{0}.item'.format(sfile), data)
                 
                 if "bitmaps" in lod_attr['dirname'] or "icons" in lod_attr['dirname']:
                     s = struct.unpack_from('@16sIIHHHHHHHHII', data[:HDR_BITMAP]) # char name[16]; int off,size,unk,count;
