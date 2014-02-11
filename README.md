@@ -26,7 +26,9 @@ Testing
 ========
 You can play with the class methods, extract all data or search specific files.
 
-run: ./lod_test.py
+run: ./lod_archive_test.py
+
+run: ./lod_manager_test.py
 
 Todo 
 ========

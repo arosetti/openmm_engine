@@ -34,9 +34,9 @@ class LodArchive(object):
         self.lod_attr = {'filename' : filename }
         self.files = {}
         self.img_ext = "png"
-        self.ready = False
+        self.loaded = False
         
-        try:
+        try: # TODO use exteral exception handling
             if not self.lod_attr['filename'].lower().endswith(".lod"):
                 raise TypeError('Lod file must end with \".lod\" extension')
 
@@ -67,9 +67,8 @@ class LodArchive(object):
             s = struct.unpack_from(struct_fmt, self.f.read(struct.calcsize(struct_fmt)))
             self.lod_attr.update({'dirname': get_filename(s[0]), 'offset': s[1],
                              'size': s[2], 'unk': s[3], 'count': s[4]})
-            self.log.info('''Lod version {}. archive contains: {} files. directory name: "{}"'''.
-                       format(self.lod_attr['version'], self.lod_attr['count'],
-                              self.lod_attr['dirname']))
+            self.log.info('''Lod version {}, internal directory: "{}", {} files.'''.
+                       format(self.lod_attr['version'], self.lod_attr['dirname'], self.lod_attr['count']))
                
             if self.lod_attr['version'] == 8:
                 struct_fmt = '@64s3i' # char name[64]; int off,size,unk;
@@ -85,7 +84,7 @@ class LodArchive(object):
                                                                'offset' : (s[1] + self.lod_attr['offset']) }
         except Exception as err:
             self.log.error("{}".format(err))
-        self.ready = True
+        self.loaded = True
 
     def GetFileData(self, dest, sfile):
         try:
