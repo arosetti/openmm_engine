@@ -2,11 +2,10 @@
 from Lod import *
 import pprint
 
-l = LodArchive('data/BITMAPS.LO') # this call is going to fail
-
-l = LodArchive('data/BITMAPS.LOD')
-
 dest = "tmp"
+
+l = LodArchive('data/BITMAPS.LO') # this call is going to fail
+l = LodArchive('data/BITMAPS.LOD')
 
 l.SaveFile(dest, "non_existent_file")
 l.SaveFile(dest, "sky17")

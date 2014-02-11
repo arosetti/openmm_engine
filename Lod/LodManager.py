@@ -1,6 +1,6 @@
 import sys, os
 import logging, logging.config
-from Lod.LodArchive import LodArchive
+from Lod.LodArchive import *
 import shutil
 
 class LodManager(object):
@@ -11,28 +11,37 @@ class LodManager(object):
         self.log = logging.getLogger('LOD')
         self.lod_list = []
 
-    def Load(self, filename):
+    def LoadLod(self, filename):
         self.log.info('''Adding "{}"'''.format(os.path.basename(filename)))
         l = LodArchive(filename)
         if l.loaded:
             self.lod_list.append(l)
         else:
             self.log.info('''Loading "{}" failed'''.format(os.path.basename(filename)))
-    
-    def LoadDir(self, path):
+
+    def LoadLodPath(self, path):
         try:
             lods = [fn for fn in os.listdir(path) if any([fn.lower().endswith('.lod')])];
 
             for lod in lods:
-                self.Load(os.path.join(path,lod))
-            self.LoadPalettes()
+                self.LoadLod(os.path.join(path,lod))
+            self.SetupPalettes()
         except Exception as err:
             self.log.error("{}".format(err))
 
-    def LoadPalettes(self):
-        dest = "tmp/palettes"
-        if not os.path.exists(dest):
-            os.makedirs(dest)
+    def GetLod(self, dirname):
         for l in self.lod_list:
-            if l.lod_attr['dirname'] == "bitmaps":
-                l.SaveFiles(dest, "pal")
+            if l.lod_attr['dirname'] == dirname:
+                return l
+        return None
+
+    def SetupPalettes(self):
+        lod_bitmaps = self.GetLod("bitmaps")
+        palettes = {}
+
+        for p in lod_bitmaps.GetFileList("pal"):
+            ret = lod_bitmaps.GetFileData("", p)
+            if len(ret['data']) == PAL_SIZE:
+                palettes.update({p: ret['data']})
+        for l in self.lod_list:
+            l.palettes = palettes

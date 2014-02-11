@@ -33,6 +33,7 @@ class LodArchive(object):
         self.log = logging.getLogger('LOD')
         self.lod_attr = {'filename' : filename }
         self.files = {}
+        self.palettes = None
         self.img_ext = "png"
         self.loaded = False
         
