@@ -1,4 +1,4 @@
-lod_dump 0.1.1
+lod_dump 0.2
 ========
 
 Might and Magic 6-7-8 LOD file extractor.
@@ -17,22 +17,24 @@ Requirements
 
 python3, pillow
 
-WARNING1: sprites.lod needs .pal files (palettes) from bitmaps.lod.
-          put all those files in dest/palettes/
+WARNING1: sprites.lod needs palette files .pal from bitmaps.lod.
+          put all those files from dest/ to dest/palettes/ manually
 
-WARNING2: currently tested on mm7, mm6 lod files. (mostly mm7),
-          the script has NOT yet been tested with mm8 lod files.
+WARNING2: tested on mm6,7,8 but a few files are still failing to be extracted.
 
 Testing
 ========
-run: ./lod_extract.py data/BITMAPS.LOD
+You can play with the class methods, extract all data or search specific files.
+
+run: ./lod_test.py
 
 Todo 
 ========
 - LodManager class: handles multiple lod files using LodArchives.
                     search for files, cache of game data.
-- LodArchive class: handles a single lod
-- Write a Test.py that loads some res and draws the mainscreen.
+- Threadsafe Lod* class ?
+- Read/Write new Lod archives from scratch.
+- Write a test_draw.py that loads some res and draws the mainscreen.
 - GUI class:
   buttons
   decorators.
@@ -51,3 +53,8 @@ new adventures from scratch!
 support for mods.
 redo all 2.5D sprites to 3D models.
 better buildings/objects models, bump mapping stuff...
+
+Disclaimer
+========
+I own these games, if you want to use this script buy the games. look at gog.com
+All trademarks, product names are the property of their respective owners!
