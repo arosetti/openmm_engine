@@ -94,7 +94,6 @@ class LodArchive(object):
             if f_attr is None:
                 raise ValueError("File \"{}\" does not exists".format(sfile))
             
-            self.log.debug("unpacking {} -> {}/{}".format(os.path.basename(self.lod_attr['filename']), self.lod_attr['dirname'], sfile))
             self.f.seek(f_attr['offset'])
             data = self.f.read(f_attr['size'])
             #save_file('{}/{}.item'.format(self.dest, sfile), data)
@@ -147,15 +146,9 @@ class LodArchive(object):
                     for z in range(s[1], f_attr['w']-1):
                         img_data[img_index] = 0
                         img_index +=1
-                palname = "{0}/palettes/pal{1:03d}.pal".format(dest, f_attr['pal'])
-                if not os.path.isfile(palname):   #TODO load from lod.
-                    raise("error can't find palette -> {}".format(palname))
-                fpal = open(palname, "rb")
-                paldata = fpal.read(PAL_SIZE)
-                fpal.close()
                 return {'data': get_img(array.array('B', img_data).tostring(), f_attr['w'], f_attr['h']),
                         'img_size': (f_attr['w'], f_attr['h']),
-                        'palette': paldata }
+                        'palette': self.palettes['pal{0:03d}'.format(f_attr['pal'])] }
             elif "maps" in self.lod_attr['dirname'] or "chapter" in self.lod_attr['dirname']:
                 if data[:8] == b'\x41\x67\x01\x00\x6D\x76\x69\x69' and data[16:18] == b'\x78\x9C':
                     hdr_size = HDR_MAP7
@@ -192,6 +185,7 @@ class LodArchive(object):
         return key_list
 
     def SaveFile(self, dest, sfile):
+        self.log.debug("saving {} -> {}/{}".format(os.path.basename(self.lod_attr['filename']), self.lod_attr['dirname'], sfile))
         ret = self.GetFileData(dest, sfile)
         if ret is None:
             return False
