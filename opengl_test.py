@@ -6,6 +6,7 @@ modified to work with python3
 it's an interesting example of use of openg with python
 '''
 
+from Lod import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -15,7 +16,8 @@ import sys
 import math
 
 ESCAPE = '\033'
- 
+
+lm = 0
 window = 0
 ID = 0
 
@@ -179,12 +181,18 @@ def DrawGLScene():
     # Z_AXIS = Z_AXIS - 0.30
     glutSwapBuffers()
 
-def loadTexture (fileName, texture):
-    image  = Image.open(fileName)
-    width  = image.size[0]
-    height = image.size[1]
-    image  = image.tostring ( "raw", "RGBX", 0, -1 )
-
+def loadTexture (dirname, sfile, texture):
+    l = lm.GetLod(dirname)
+    ret = l.GetFileData("", sfile)
+    
+    width  = ret['img_size'][0]
+    height = ret['img_size'][1]
+    
+    img = Image.new("P", ret['img_size'])
+    img.putdata(ret['data'])
+    img.putpalette(ret['palette'])
+    img = img.convert("RGBX")
+    image  = img.tostring ( "raw", "RGBX", 0, -1 )
     #texture = glGenTextures ( 1 )
     glBindTexture     ( GL_TEXTURE_2D, texture )   
     glPixelStorei     ( GL_UNPACK_ALIGNMENT,1 )
@@ -207,8 +215,12 @@ def main():
 
     window = glutCreateWindow(b'OpenGL Python Maze Test')
 
-    loadTexture ( "res/test_floor.png", texture )
-    loadTexture ( "res/test_wall.png", textureWall )
+    global lm 
+    lm = LodManager()
+    lm.LoadLods('data')
+
+    loadTexture ( "bitmaps", "bemob1b", texture )
+    loadTexture ( "bitmaps", "bcsctr", textureWall )
  
     glutDisplayFunc(DrawGLScene)
     glutIdleFunc(DrawGLScene)
