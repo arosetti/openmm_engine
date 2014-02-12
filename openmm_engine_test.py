@@ -13,8 +13,6 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PIL import Image
 
-ESCAPE = '\033'
-
 lm = 0
 window = 0
 ID = 0
@@ -28,6 +26,7 @@ DIRECTION = 1
 
 texture  = 0
 textureWall = 1
+textureCube = 2
 angle = 0
 
 camx = 0
@@ -83,10 +82,10 @@ def keyPressed(*args):
     global X_AXIS,Y_AXIS,Z_AXIS
     global camx, camz,angle
     
-    rot_step = 6
-    mov_step = 0.7
+    rot_step = 7
+    mov_step = 0.8
 
-    if args[0] == ESCAPE:
+    if args[0] == b'\033': # escape
         sys.exit()
 
     if args[0] == b'a':
@@ -104,6 +103,37 @@ def keyPressed(*args):
     if args[0] == b's':
         camx -= math.sin(math.radians(-angle))*mov_step
         camz -= math.cos(math.radians(-angle))*mov_step
+
+def DrawBox(size):
+    glBindTexture(GL_TEXTURE_2D, textureCube);
+    glTranslatef(3.0,-.5,-3.0)
+    glScaled(.4,.4,.4);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glEnd();
 
 def DrawGLScene():
     global X_AXIS,Y_AXIS,Z_AXIS
@@ -173,8 +203,8 @@ def DrawGLScene():
                 glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2,  1.0,  1.0 - numz*2);
                 glTexCoord2f(0.0, 1.0); glVertex3f(-1.0 + num*2,  1.0, -1.0 - numz*2);
                 glEnd();
-
     glPopMatrix();
+    DrawBox(0.4);
     # X_AXIS = X_AXIS - 0.30
     # Z_AXIS = Z_AXIS - 0.30
     glutSwapBuffers()
@@ -202,7 +232,6 @@ def loadTexture (dirname, sfile, texture):
 
     return texture
 
- 
 def main():
     global window
     global ID 
@@ -219,12 +248,12 @@ def main():
 
     loadTexture ( "bitmaps", "bemob1b", texture )
     loadTexture ( "bitmaps", "bcsctr", textureWall )
+    loadTexture ( "bitmaps", "cblrg", textureCube )
  
     glutDisplayFunc(DrawGLScene)
     glutIdleFunc(DrawGLScene)
     glutKeyboardFunc(keyPressed)
     InitGL(800, 600)
-    #loadImage()
 
     glutMainLoop()
  

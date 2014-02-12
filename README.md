@@ -8,7 +8,7 @@ Might and Magic 6-7-8 engine attempt.
 
 Comments
 ========
-This is one of my first python project.
+This is one of my first python projects.
 
 Don't be shocked if you find the code horrorific, I don't know the language very well. ( I know C/C++ )
 
@@ -20,7 +20,7 @@ I'm doing this work for fun contact me if you want to help ;)
 The current work is very raw and there is no actual engine but mostly tests of modules, random code.
 
 I found very helpful the documentations and the code of other projects like mm_mapview, mm8leveleditor, mm7view, and the new mm7 reverse engineering.
-also this link: ![mm6_regengedanken.de](http://rewiki.regengedanken.de/wiki/Might_and_Magic_6)
+also this link: http://rewiki.regengedanken.de/wiki/Might_and_Magic_6
 
 Requirements
 ========
