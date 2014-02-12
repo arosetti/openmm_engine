@@ -32,7 +32,7 @@ and uses as textures for walls and floor. :D
 WARNING: use data from mm6! (tested on gentoo linux)
 - run: ./opengl_test.py
 
-![ScreenShot](https://raw.github.com/viralex/lod_dump/4fec86d6ac4daf5bf3c6224eabad33fe55fee944/res/screen.png)
+![ScreenShot](/res/screen.png)
 
 Todo 
 ========
