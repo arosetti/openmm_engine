@@ -19,7 +19,7 @@ class LodManager(object):
         else:
             self.log.info('''Loading "{}" failed'''.format(os.path.basename(filename)))
 
-    def LoadLodPath(self, path):
+    def LoadLods(self, path):
         try:
             lods = [fn for fn in os.listdir(path) if any([fn.lower().endswith('.lod')])];
 

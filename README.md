@@ -18,12 +18,16 @@ Requirements
 python3, pillow
 
 WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
-
+WARNING2: this program is being developed on linux. if you are a windows user
+          you may have to change it a bit.
 Testing
 ========
 You can play with the class methods, extract all data or search specific files.
+- run: ./lod_test.py
 
-run: ./lod_test.py
+This is a simple example opengl with python3.
+(code taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
+- run: ./maze_test.py
 
 Todo 
 ========

@@ -5,10 +5,12 @@ import pprint
 dest = "tmp"
 
 lm = LodManager()
-lm.LoadLodPath('data')
+lm.LoadLods('data')
 
 lod_sprites = lm.GetLod("sprites08")
 if lod_sprites is not None:
     lod_sprites.SaveFiles(dest, "tree")
 else:
     print("can't find sprites08")
+
+lm.GetLod("bitmaps")
