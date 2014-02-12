@@ -1,4 +1,4 @@
-lod_dump 0.2.1
+lod_dump 0.3
 ========
 
 Might and Magic 6-7-8 LOD file extractor.
@@ -25,9 +25,10 @@ Testing
 You can play with the class methods, extract all data or search specific files.
 - run: ./lod_test.py
 
-This is a simple example opengl with python3.
+This is a simple example opengl with python3 that loads resources from lod files
+and uses as textures for walls and floor. :D
 (code taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
-- run: ./maze_test.py
+- run: ./opengl_test.py
 
 Todo 
 ========
