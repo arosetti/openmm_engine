@@ -1,7 +1,7 @@
-lod_dump 0.3
+openmm_engine 0.3
 ========
 
-Might and Magic 6-7-8 LOD file extractor.
+Might and Magic 6-7-8 engine, LOD file extractor.
 
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
@@ -9,8 +9,14 @@ Might and Magic 6-7-8 LOD file extractor.
 Comments
 ========
 This is my first python project, I don't know the language very well.
-Why? Ok there are a lot of lod extractors but none in python and 
+
+Why?
+Ok there are a lot of lod extractors but none in python and 
 I wanted to learn a bit of python.
+
+I'm doing this work for fun contact me if you want to help ;)
+The current work is very raw and there are mostly tests of modules to build 
+the actual engine.
 
 Requirements
 ========
@@ -30,7 +36,7 @@ and uses as textures for walls and floor. :D
 (code taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
 
 WARNING: use data from mm6! (tested on gentoo linux)
-- run: ./opengl_test.py
+- run: ./openmm_engine_test.py
 
 ![ScreenShot](/res/screen.png)
 
