@@ -15,11 +15,11 @@ I wanted to learn a bit of python.
 Requirements
 ========
 
-python3, pillow
+- python3, pillow
 
-WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
-WARNING2: this program is being developed on linux. if you are a windows user
-          you may have to change it a bit.
+- WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
+- WARNING2: this program is being developed on linux. if you are a windows user
+            you may have to change it a bit.
 Testing
 ========
 You can play with the class methods, extract all data or search specific files.
@@ -28,7 +28,11 @@ You can play with the class methods, extract all data or search specific files.
 This is a simple example opengl with python3 that loads resources from lod files
 and uses as textures for walls and floor. :D
 (code taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
+
+WARNING: use data from mm6! (tested on gentoo linux)
 - run: ./opengl_test.py
+
+![ScreenShot](https://raw.github.com/viralex/lod_dump/4fec86d6ac4daf5bf3c6224eabad33fe55fee944/res/screen.png)
 
 Todo 
 ========
