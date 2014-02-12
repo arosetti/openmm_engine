@@ -12,5 +12,3 @@ if lod_sprites is not None:
     lod_sprites.SaveFiles(dest, "tree")
 else:
     print("can't find sprites08")
-
-lm.GetLod("bitmaps")

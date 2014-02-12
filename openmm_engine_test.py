@@ -6,14 +6,12 @@ modified to work with python3
 it's an interesting example of use of openg with python
 '''
 
+import sys, math, numpy
 from Lod import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PIL import Image
-import numpy
-import sys
-import math
 
 ESCAPE = '\033'
 
