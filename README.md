@@ -6,6 +6,8 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
+![ScreenShot](/res/screen1.png)
+
 Requirements
 ========
 
@@ -17,7 +19,7 @@ Requirements
 
 WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
 
-WARNING2: this program is being developed on linux. if you are a windows user you may have to change it a bit.
+WARNING2: this program is being developed on linux. if you are a windows user you may have to change it a bit the code.
 
 Testing
 ========

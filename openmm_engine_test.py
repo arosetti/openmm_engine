@@ -21,12 +21,15 @@ ID = 0
 X_AXIS = 0.0
 Y_AXIS = 0.0
 Z_AXIS = 0.0
- 
+
 DIRECTION = 1
 
-texture  = 0
-textureWall = 1
-textureCube = 2
+textureFloor  = 0
+textureCeil  = 1
+textureWall = 2
+textureCube = 3
+textureSky = 4
+
 angle = 0
 
 camx = 0
@@ -70,7 +73,7 @@ def InitGL(Width, Height):
     glShadeModel(GL_SMOOTH)   
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(45.0, float(Width)/float(Height), 0.1, 100.0)
+    gluPerspective(45.0, float(Width)/float(Height), 0.1, 200.0)
     glMatrixMode(GL_MODELVIEW)
     glEnable(GL_TEXTURE_2D) # initialize texture mapping
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
@@ -104,10 +107,41 @@ def keyPressed(*args):
         camx -= math.sin(math.radians(-angle))*mov_step
         camz -= math.cos(math.radians(-angle))*mov_step
 
-def DrawBox(size):
+def DrawBox():
     glBindTexture(GL_TEXTURE_2D, textureCube);
     glTranslatef(3.0,-.5,-3.0)
     glScaled(.4,.4,.4);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+    glEnd();
+
+def DrawSky():
+    glBindTexture(GL_TEXTURE_2D, textureSky);
+    glTranslatef(0,0,0)
+    glScaled(200,200,200);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
     glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
@@ -142,8 +176,8 @@ def DrawGLScene():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
  
     glLoadIdentity()
+
     glTranslatef(0.0+camx,0.0,0.0+camz)
- 
     glTranslatef(0.0-camx,0.0,0.0-camz)
     glRotatef(X_AXIS,1.0,0.0,0.0)
     glRotatef(Y_AXIS,0.0,1.0,0.0)
@@ -151,13 +185,13 @@ def DrawGLScene():
     glTranslatef(0.0+camx,0.0,-0.0+camz)
     #glBindTexture(GL_TEXTURE_2D, ID)
     #glBindTexture(GL_TEXTURE_2D, texture)   # 2d texture (x and y size)
+
     glPushMatrix();
     glTranslatef(-2.0,0.0,1.0)
     #glBindTexture(GL_TEXTURE_2D, image)
-    
     for numz in range(0,10):
         for num in range(0,10):
-            glBindTexture(GL_TEXTURE_2D, texture)   # 2d texture (x and y size)
+            glBindTexture(GL_TEXTURE_2D, textureFloor)   # 2d texture (x and y size)
 
             glBegin(GL_QUADS); # floor
             glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2, -1.0, -1.0 - numz*2);
@@ -166,6 +200,7 @@ def DrawGLScene():
             glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, -1.0,  1.0 - numz*2);
             glEnd();
 
+            glBindTexture(GL_TEXTURE_2D, textureCeil)
             glBegin(GL_QUADS); # roof
             glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2, 1.0, -1.0 - numz*2);
             glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2, 1.0, -1.0 - numz*2);
@@ -204,7 +239,9 @@ def DrawGLScene():
                 glTexCoord2f(0.0, 1.0); glVertex3f(-1.0 + num*2,  1.0, -1.0 - numz*2);
                 glEnd();
     glPopMatrix();
-    DrawBox(0.4);
+    DrawBox();
+
+    DrawSky();
     # X_AXIS = X_AXIS - 0.30
     # Z_AXIS = Z_AXIS - 0.30
     glutSwapBuffers()
@@ -246,10 +283,12 @@ def main():
     lm = LodManager()
     lm.LoadLods('data')
 
-    loadTexture ( "bitmaps", "bemob1b", texture )
+    loadTexture ( "bitmaps", "bemob2b", textureFloor )
+    loadTexture ( "bitmaps", "d2ceil4", textureCeil )
     loadTexture ( "bitmaps", "bcsctr", textureWall )
-    loadTexture ( "bitmaps", "cblrg", textureCube )
- 
+    loadTexture ( "bitmaps", "cbsm", textureCube )
+    loadTexture ( "bitmaps", "sky07", textureSky)
+
     glutDisplayFunc(DrawGLScene)
     glutIdleFunc(DrawGLScene)
     glutKeyboardFunc(keyPressed)
