@@ -364,7 +364,7 @@ def main():
     glutInitWindowSize(640,480)
     glutInitWindowPosition(200,200)
 
-    window = glutCreateWindow(b'OpenGL Python Maze Test')
+    window = glutCreateWindow(b'Openmm_engine test')
 
     global lm 
     lm = LodManager()

@@ -6,6 +6,8 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
+![ScreenShot](/res/screen_ui.png)
+
 ![ScreenShot](/res/screen1.png)
 
 Requirements
