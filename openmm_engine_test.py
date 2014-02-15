@@ -29,7 +29,6 @@ def threadInc():
 tm = 0 # texmanager
 lm = 0 # lodmanager
 window = 0
-ID = 0
 
 sw = 1024
 sh = 768
@@ -37,13 +36,14 @@ swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
 #rotation
-X_AXIS = 0.0
-Y_AXIS = 0.0
-Z_AXIS = 0.0
-DIRECTION = 1
+x_axis = 0.0
+y_axis = 0.0
+z_axis = 0.0
+direction = 1
 angle = 0
-camx = 0
-camz = 0
+camx = -3.0
+camz = 2.0
+camy = 0.0
 
 # define a matrix 
 matrix = [[0 for i in range(10)] for j in range(10)]
@@ -72,31 +72,9 @@ matrix[2][3] = 0
 matrix[3][3] = 1
 matrix[4][3] = 1
 
-def InitGL(Width, Height): 
-    glClearColor(0.0, 0.0, 0.0, 0.0)
-    glClearDepth(1.0) 
-    #glDepthFunc(GL_LESS)
-    glDepthFunc(GL_LEQUAL) 
-    glShadeModel(GL_SMOOTH)   
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    gluPerspective(50.0, float(Width)/float(Height), 0.1, 300.0)
-    glMatrixMode(GL_MODELVIEW)
-    glEnable(GL_TEXTURE_2D) # initialize texture mapping
-
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
-    
-    glEnable (GL_BLEND)
-    glBlendEquation(GL_FUNC_ADD);
-    #glDisable(GL_COLOR_MATERIAL)
-    glEnable(GL_DEPTH_TEST)
-    glEnable(GL_ALPHA_TEST)
-
 def keyPressed(*args):
-    global X_AXIS,Y_AXIS,Z_AXIS
-    global camx, camz,angle
+    global x_axis,y_axis,z_axis
+    global camx,camy,camz,angle
     
     rot_step = 7
     mov_step = 0.8
@@ -105,11 +83,11 @@ def keyPressed(*args):
         sys.exit()
 
     if args[0] == b'a':
-        Y_AXIS = Y_AXIS - rot_step;
+        y_axis = y_axis - rot_step;
         angle -= rot_step
 
     if args[0] == b'd':
-        Y_AXIS = Y_AXIS + rot_step;
+        y_axis = y_axis + rot_step;
         angle += rot_step
 
     if args[0] == b'w':
@@ -119,6 +97,13 @@ def keyPressed(*args):
     if args[0] == b's':
         camx -= math.sin(math.radians(-angle))*mov_step
         camz -= math.cos(math.radians(-angle))*mov_step
+
+    if args[0] == b'q':
+        camy += math.sin(math.radians(-angle))*mov_step
+
+    if args[0] == b'e':
+        camy -= math.sin(math.radians(-angle))*mov_step
+
 
 def DrawBox():
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
@@ -155,7 +140,7 @@ def DrawBox():
 
 def DrawSky():
     glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
-    glScaled(200,200,200);
+    glScaled(100,100,100);
     glPushMatrix();
     glTranslatef(0,0,0)
     glRotatef(sky_rot, 0.0, 1.0, 0.0);
@@ -238,14 +223,76 @@ def DrawDungeon():
                 glEnd();
     glPopMatrix();
 
-def Set2DMode():
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    #gluOrtho2D(0.0, sw, 0.0, sh);
-    glOrtho(0, sw, sh, 0, -1, 1);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+def DrawAxis():
+    l = 0.007
+    l2 = 0.0085
+    glPushMatrix();
+    glDisable(GL_COLOR_MATERIAL)
+    glDisable(GL_LIGHTING)
+    glDisable(GL_BLEND)
+    glDisable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
+    glLineWidth(2.0);
+    glBegin(GL_LINES);
+    glColor3f(1,0,0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(l, 0, 0);
+    glColor3f(0,1,0);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, l, 0);
+    glColor3f(0,0,1);
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, 0, l);
+    glEnd();
+
+    glColor3f(1.0, 1.0, 0.2)
+    glRasterPos3f(l2, 0.0, 0.0)
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('x'))
+    glRasterPos3f(0.0, l2, 0.0)
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('y'))
+    glRasterPos3f(0.0, 0.0, l2)
+    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
+    glPopMatrix();
+
+def InitGL():
+    glClearColor(0.1, 0.1, .7, 0.0)
+    glClearDepth(1.0)
+    glDepthFunc(GL_LESS) # LEQUAL
+    glShadeModel(GL_SMOOTH)
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+
+def Set2DMode():
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity();
+    glOrtho(0, sw, sh, 0, -1, 1)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    glDisable(GL_DEPTH_TEST)
+    glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA )
+    glEnable(GL_TEXTURE_2D)
+
+def Set3DMode():
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(60.0, float(sw) / float(sh), .1, 3000)
+    gluLookAt(0, 0, 1, 0, 0, 0, 0.0, 1.0, 0.0)
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D)
+
+    glEnable (GL_BLEND)
+    glBlendEquation(GL_FUNC_ADD)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+    glEnable(GL_DEPTH_TEST)
+    glEnable(GL_ALPHA_TEST)
+    glAlphaFunc(GL_GREATER, 0)
+
+    #glEnable(GL_LIGHTING)
+    #glDisable(GL_COLOR_MATERIAL)
 
 def Draw2DImage(texture, w, h, x, y):
     glBindTexture(GL_TEXTURE_2D, texture)
@@ -259,36 +306,24 @@ def Draw2DImage(texture, w, h, x, y):
     glEnd();
     glPopMatrix();
 
-def Set3DMode():
-    glEnable(GL_DEPTH_TEST)
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(50.0, float(sw) / float(sh), 1, 300);
-    #gluLookAt(0, 0, 400, 0, 0, 0, 0.0, 1.0, 0.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    glEnable(GL_TEXTURE_2D) # initialize texture mapping
-    glEnable(GL_LIGHTING);
+def SetCamera():
+    glRotatef(x_axis,1.0,0.0,0.0)
+    glRotatef(y_axis,0.0,1.0,0.0)
+    glRotatef(z_axis,0.0,0.0,1.0)
+    glTranslatef(camx,camy,camz)
 
 def Render():
-    global X_AXIS,Y_AXIS,Z_AXIS
-    global DIRECTION
+    global x_axis,y_axis,z_axis
+    global direction
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-    glAlphaFunc(GL_GREATER, 0)
 
     Set3DMode()
-
-    glTranslatef(0.0+camx,0.0,0.0+camz)
-    glTranslatef(0.0-camx,0.0,0.0-camz)
-    glRotatef(X_AXIS,1.0,0.0,0.0)
-    glRotatef(Y_AXIS,0.0,1.0,0.0)
-    glRotatef(Z_AXIS,0.0,0.0,1.0)
-    glTranslatef(0.0+camx,0.0,-0.0+camz)
+    SetCamera()
 
     DrawDungeon()
     DrawBox()
     DrawSky()
+    DrawAxis()
 
     Set2DMode()
 
@@ -324,7 +359,6 @@ def Render():
 
 def main():
     global window
-    global ID 
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
     glutInitWindowSize(sw,sh)
@@ -357,7 +391,7 @@ def main():
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
     glutKeyboardFunc(keyPressed)
-    InitGL(sw, sh)
+    InitGL()
 
     t = threading.Thread(target=threadInc)
     t.daemon = True
