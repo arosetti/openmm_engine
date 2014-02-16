@@ -271,14 +271,15 @@ def Set2DMode():
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glDisable(GL_DEPTH_TEST)
-    glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA )
+    glEnable (GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glEnable(GL_TEXTURE_2D)
 
 def Set3DMode():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(60.0, float(sw) / float(sh), .1, 3000)
-    gluLookAt(0, 0, 1, 0, 0, 0, 0.0, 1.0, 0.0)
+    gluLookAt(0, 0, .5, 0, 0, 0, 0.0, 1.0, 0.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
@@ -298,6 +299,7 @@ def Draw2DImage(texture, w, h, x, y):
     glBindTexture(GL_TEXTURE_2D, texture)
     glPushMatrix();
     glTranslatef(x,y,0);
+    #glColor4f(1.0, 0.0, 0.0, 0.0)
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0); 
     glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf);
@@ -330,14 +332,14 @@ def Render():
     t = tm.textures["footer"]
     Draw2DImage(t['id'], t['w'], t['h'],
                 0.0,
-                (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'])) ) )
+                (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
+
+    t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
+    Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
     t = tm.textures["border1.pcx"]
     Draw2DImage(t['id'], t['w'], t['h'],
                (sw-swf*float(t['w'])) , (sh - shf*float(t['h'])) )
-
-    t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image
-    Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
     t = tm.textures["border3"]
     Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
@@ -349,12 +351,11 @@ def Render():
     Draw2DImage(t['id'], t['w'], t['h'], sw - swf*float(t['w']), 0.0)
 
     t = tm.textures["malea01"]
-    Draw2DImage(t['id'], t['w'], t['h'], swf*23.0, shf*383.0)
+    Draw2DImage(t['id'], t['w'], t['h'], swf*22.0, shf*383.0)
 
     t = tm.textures["eradcate"]
-    Draw2DImage(t['id'], t['w'], t['h'], swf*136.0, shf*383.0)# distance ~113px
+    Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-    glEnable(GL_DEPTH_TEST);
     glutSwapBuffers();
 
 def main():
