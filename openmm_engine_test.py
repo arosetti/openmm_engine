@@ -84,11 +84,12 @@ def keyPressed(*args):
 
     if args[0] == b'a':
         y_axis = y_axis - rot_step;
-        angle -= rot_step
 
+        angle = (angle - rot_step) % 360
     if args[0] == b'd':
         y_axis = y_axis + rot_step;
-        angle += rot_step
+        angle = (angle + rot_step) % 360
+
 
     if args[0] == b'w':
         camx += math.sin(math.radians(-angle))*mov_step
@@ -174,7 +175,7 @@ def DrawSky():
 
 def DrawDungeon():
     glPushMatrix();
-    glTranslatef(-2.0,0.0,1.0)
+    glTranslatef(-3.0,0.0,0.0)
     for numz in range(0,10):
         for num in range(0,10):
             glBindTexture(GL_TEXTURE_2D, tm.textures["bemob2b"]['id'])   # 2d texture (x and y size)
@@ -254,6 +255,39 @@ def DrawAxis():
     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
     glPopMatrix();
 
+def DrawText(msg):
+    glDisable(GL_COLOR_MATERIAL)
+    glDisable(GL_LIGHTING)
+    glDisable(GL_BLEND)
+    glDisable(GL_TEXTURE_2D)
+    glDisable(GL_DEPTH_TEST)
+    hoff = sh - shf*(tm.textures["border2.pcx"]['h'] + 5)
+
+    off = 0
+    glColor3f(1, 1, 1)
+    for c in msg:
+        off += 9
+        glRasterPos2f(18 + off, hoff)
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(c))
+
+    glEnable(GL_COLOR_MATERIAL)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_BLEND)
+    glEnable(GL_TEXTURE_2D)
+    glEnable(GL_DEPTH_TEST)
+
+def Draw2DImage(texture, w, h, x, y):
+    glBindTexture(GL_TEXTURE_2D, texture)
+    glPushMatrix();
+    glTranslatef(x,y,0);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0);
+    glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf);
+    glTexCoord2f(1.0, 0.0); glVertex2f(w*swf, h*shf);
+    glTexCoord2f(1.0, 1.0); glVertex2f(w*swf, 0.0);
+    glEnd();
+    glPopMatrix();
+
 def InitGL():
     glClearColor(0.1, 0.1, .7, 0.0)
     glClearDepth(1.0)
@@ -291,22 +325,8 @@ def Set3DMode():
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_ALPHA_TEST)
     glAlphaFunc(GL_GREATER, 0)
-
     #glEnable(GL_LIGHTING)
     #glDisable(GL_COLOR_MATERIAL)
-
-def Draw2DImage(texture, w, h, x, y):
-    glBindTexture(GL_TEXTURE_2D, texture)
-    glPushMatrix();
-    glTranslatef(x,y,0);
-    #glColor4f(1.0, 0.0, 0.0, 0.0)
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0); 
-    glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf);
-    glTexCoord2f(1.0, 0.0); glVertex2f(w*swf, h*shf);
-    glTexCoord2f(1.0, 1.0); glVertex2f(w*swf, 0.0);
-    glEnd();
-    glPopMatrix();
 
 def SetCamera():
     glRotatef(x_axis,1.0,0.0,0.0)
@@ -355,6 +375,8 @@ def Render():
 
     t = tm.textures["eradcate"]
     Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
+
+    DrawText("position ({0:.2f},{1:.2f},{2:.2f}) angle {3:.2f}".format(camx,camy,camz,angle))
 
     glutSwapBuffers();
 
