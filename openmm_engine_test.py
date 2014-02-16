@@ -30,7 +30,7 @@ tm = 0 # texmanager
 lm = 0 # lodmanager
 window = 0
 
-sw = 1024
+sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
 sh = 768
 swf = float(sw) / 640.0
 shf = float(sh) / 480.0
@@ -80,7 +80,7 @@ def keyPressed(*args):
     mov_step = 0.8
 
     if args[0] == b'\033': # escape
-        sys.exit()
+        sys.exit(0)
 
     if args[0] == b'a':
         y_axis = y_axis - rot_step;
@@ -256,6 +256,7 @@ def DrawAxis():
     glPopMatrix();
 
 def DrawText(msg):
+    glPushMatrix();
     glDisable(GL_COLOR_MATERIAL)
     glDisable(GL_LIGHTING)
     glDisable(GL_BLEND)
@@ -269,62 +270,53 @@ def DrawText(msg):
         off += 9
         glRasterPos2f(18 + off, hoff)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(c))
-
-    glEnable(GL_COLOR_MATERIAL)
-    glEnable(GL_LIGHTING)
-    glEnable(GL_BLEND)
-    glEnable(GL_TEXTURE_2D)
-    glEnable(GL_DEPTH_TEST)
+    glPopMatrix();
 
 def Draw2DImage(texture, w, h, x, y):
+    glPushMatrix()
     glBindTexture(GL_TEXTURE_2D, texture)
-    glPushMatrix();
-    glTranslatef(x,y,0);
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0);
-    glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf);
-    glTexCoord2f(1.0, 0.0); glVertex2f(w*swf, h*shf);
-    glTexCoord2f(1.0, 1.0); glVertex2f(w*swf, 0.0);
-    glEnd();
-    glPopMatrix();
+    glTranslatef(x,y,0)
+    glBegin(GL_QUADS)
+    glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0)
+    glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf)
+    glTexCoord2f(1.0, 0.0); glVertex2f(w*swf, h*shf)
+    glTexCoord2f(1.0, 1.0); glVertex2f(w*swf, 0.0)
+    glEnd()
+    glPopMatrix()
 
 def InitGL():
     glClearColor(0.1, 0.1, .7, 0.0)
-    glClearDepth(1.0)
+    #glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
     glShadeModel(GL_SMOOTH)
-
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
-    glLoadIdentity();
+    glLoadIdentity()
     glOrtho(0, sw, sh, 0, -1, 1)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
-    glDisable(GL_DEPTH_TEST)
-    glEnable (GL_BLEND)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     glEnable(GL_TEXTURE_2D)
+    glDisable(GL_DEPTH_TEST)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+    glEnable (GL_BLEND)
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def Set3DMode():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(60.0, float(sw) / float(sh), .1, 3000)
+    gluPerspective(50.0, float(sw) / float(sh), .1, 3000)
     gluLookAt(0, 0, .5, 0, 0, 0, 0.0, 1.0, 0.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
-
-    glEnable (GL_BLEND)
-    glBlendEquation(GL_FUNC_ADD)
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
     glEnable(GL_DEPTH_TEST)
-    glEnable(GL_ALPHA_TEST)
-    glAlphaFunc(GL_GREATER, 0)
+    #glEnable (GL_BLEND)
+    #glBlendEquation(GL_FUNC_ADD)
+    #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     #glEnable(GL_LIGHTING)
     #glDisable(GL_COLOR_MATERIAL)
 

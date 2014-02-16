@@ -49,6 +49,7 @@ class TextureManager(object):
 
         if transparency_color is not None:
             t=transparency_color
+            self.transparency_color = t
             for y in range(img.size[1]):
                 for x in range(img.size[0]):
                     p = img.getpixel((x, y))
@@ -62,7 +63,7 @@ class TextureManager(object):
         glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
         glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST ) #NEAREST
         glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_LINEAR ) #any combo
-        gluBuild2DMipmaps ( GL_TEXTURE_2D, 3, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
+        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         self.textures[sfile] = {'id': texture_id, 'dir': dirname,
                                'w': width, 'h': height}
