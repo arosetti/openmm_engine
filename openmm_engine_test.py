@@ -10,6 +10,7 @@ import io, sys, math, numpy
 
 from Lod import *
 from Engine import *
+from Map import *
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -20,6 +21,15 @@ import threading, time
 
 sky_rot = 0.0
 
+gobval = ('a', 'b', 'c', 'd', 'e', 'f')
+gob = 0
+
+def threadGob():
+    global sky_rot,gob,gobval
+    while True:
+        time.sleep(.25)
+        gob = (gob + 1) % 6
+
 def threadInc():
     global sky_rot
     while True:
@@ -28,82 +38,76 @@ def threadInc():
 
 tm = 0 # texmanager
 lm = 0 # lodmanager
+m = 0  # map
 window = 0
+mode = True
 
 sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
 sh = 768
 swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
-#rotation
-x_axis = 0.0
-y_axis = 0.0
-z_axis = 0.0
-direction = 1
-angle = 0
-camx = -3.0
-camz = 2.0
-camy = 0.0
-
-# define a matrix 
-matrix = [[0 for i in range(10)] for j in range(10)]
-
-matrix[0][0] = 1
-matrix[0][1] = 1
-matrix[0][2] = 1
-matrix[0][3] = 1
-matrix[0][4] = 1
-matrix[0][5] = 1
-
-matrix[1][5] = 1
-matrix[2][5] = 1
-matrix[3][5] = 1
-matrix[4][5] = 1
-matrix[5][5] = 1
-
-matrix[5][4] = 1
-matrix[5][3] = 1
-matrix[5][2] = 1
-matrix[5][1] = 1
-
-
-matrix[1][3] = 1
-matrix[2][3] = 0
-matrix[3][3] = 1
-matrix[4][3] = 1
+#camera
+angle = 0.0
+angle2 = 5.0
+eyex = 2.0
+eyey = 0.7
+eyez = 4.0
+lx = math.sin(math.radians(-angle))
+lz = -math.cos(math.radians(-angle))
+ly = math.sin(math.radians(-angle2))
 
 def keyPressed(*args):
-    global x_axis,y_axis,z_axis
-    global camx,camy,camz,angle
-    
-    rot_step = 7
-    mov_step = 0.8
+    global eyex,eyey,eyez,angle,angle2
+    global lx,lz,ly
+    global mode
 
-    if args[0] == b'\033': # escape
+    rot_step = 5
+    mov_step = .5
+
+    #print(args)
+
+    if args[0] == b'\t': # escape
+        mode = not mode
+
+    if args[0] == b'\x1B': # escape
         sys.exit(0)
 
+    if args[0] == b'\x7f':
+        angle2 = (angle2 + rot_step) % 360
+        ly = math.sin(math.radians(-angle2))
+
+    if args[0] == 107:
+        angle2 = 0
+        ly = math.sin(math.radians(-angle2))
+
+    if args[0] == 105:
+        angle2 = (angle2 - rot_step) % 360
+        ly = math.sin(math.radians(-angle2))
+
     if args[0] == b'a':
-        y_axis = y_axis - rot_step;
-
-        angle = (angle - rot_step) % 360
-    if args[0] == b'd':
-        y_axis = y_axis + rot_step;
         angle = (angle + rot_step) % 360
+        lx = math.sin(math.radians(-angle))
+        lz = -math.cos(math.radians(-angle))
 
+    if args[0] == b'd':
+        angle = (angle - rot_step) % 360
+        lx = math.sin(math.radians(-angle))
+        lz = -math.cos(math.radians(-angle))
 
     if args[0] == b'w':
-        camx += math.sin(math.radians(-angle))*mov_step
-        camz += math.cos(math.radians(-angle))*mov_step
+        eyex += mov_step * lx
+        eyez += mov_step * lz
 
     if args[0] == b's':
-        camx -= math.sin(math.radians(-angle))*mov_step
-        camz -= math.cos(math.radians(-angle))*mov_step
+        eyex -= mov_step * lx
+        eyez -= mov_step * lz
 
-    if args[0] == b'q':
-        camy += math.sin(math.radians(-angle))*mov_step
+    if args[0] == 104:
+        eyey += mov_step
 
-    if args[0] == b'e':
-        camy -= math.sin(math.radians(-angle))*mov_step
+    if args[0] == 108:
+        eyey -= mov_step
 
 
 def DrawBox():
@@ -142,7 +146,7 @@ def DrawBox():
 def DrawSky():
     glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
     glPushMatrix();
-    glScaled(100,100,100);
+    glScaled(300,300,300);
     glRotatef(sky_rot, 0.0, 1.0, 0.0);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
@@ -171,6 +175,32 @@ def DrawSky():
     glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
     glEnd();
     glPopMatrix();
+
+matrix = [[0 for i in range(10)] for j in range(10)]
+
+matrix[0][0] = 1
+matrix[0][1] = 1
+matrix[0][2] = 1
+matrix[0][3] = 1
+matrix[0][4] = 1
+matrix[0][5] = 1
+
+matrix[1][5] = 1
+matrix[2][5] = 1
+matrix[3][5] = 1
+matrix[4][5] = 1
+matrix[5][5] = 1
+
+matrix[5][4] = 1
+matrix[5][3] = 1
+matrix[5][2] = 1
+matrix[5][1] = 1
+
+
+matrix[1][3] = 1
+matrix[2][3] = 0
+matrix[3][3] = 1
+matrix[4][3] = 1
 
 def DrawDungeon():
     glPushMatrix();
@@ -224,8 +254,8 @@ def DrawDungeon():
     glPopMatrix();
 
 def DrawAxis():
-    l = 0.7
-    l2 = 0.85
+    l = 1
+    l2 = 1.03
     glPushMatrix();
     glDisable(GL_COLOR_MATERIAL)
     glDisable(GL_LIGHTING)
@@ -252,6 +282,7 @@ def DrawAxis():
     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('y'))
     glRasterPos3f(0.0, 0.0, l2)
     glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
+    glEnable(GL_TEXTURE_2D)
     glPopMatrix();
 
 def DrawText(msg):
@@ -269,6 +300,7 @@ def DrawText(msg):
         off += 9
         glRasterPos2f(18 + off, hoff)
         glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(c))
+    glEnable(GL_TEXTURE_2D)
     glPopMatrix();
 
 def Draw2DImage(texture, w, h, x, y):
@@ -288,7 +320,7 @@ def DrawSprite(texture, w, h, x, y, z):
     glBindTexture(GL_TEXTURE_2D, texture)
     r = float(h)/float(w)
     glTranslatef(x, y, z)
-    #glRotatef(sky_rot, 0.0, 1.0, 0.0)
+    glRotatef(angle, 0.0, 1.0, 0.0)
     glBegin(GL_QUADS)
     glTexCoord2f(1.0, 0.0); glVertex3f(0.0, 0.0,0.0)
     glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 2.0*r,0.0)
@@ -298,10 +330,10 @@ def DrawSprite(texture, w, h, x, y, z):
     glPopMatrix()
 
 def InitGL():
-    glClearColor(0.1, 0.1, .7, 0.0)
-    #glClearDepth(1.0)
+    glClearColor(0.1, 0.4, .8, 0.0)
+    glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
-    glShadeModel(GL_SMOOTH)
+    glShadeModel (GL_FLAT) #glShadeModel(GL_SMOOTH)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -319,41 +351,41 @@ def Set2DMode():
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def Set3DMode():
+    global eyex,eyey,eyez, lx,lz,ly
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(50.0, float(sw) / float(sh), .1, 3000)
-    gluLookAt(0, 0, .5, 0, 0, 0, 0.0, 1.0, 0.0)
+    gluLookAt(eyex, eyey, eyez,
+              eyex + lx, eyey + ly, eyez + lz,
+              0.0, 1.0, 0.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
-    #glBlendEquation(GL_FUNC_ADD)
     #glEnable(GL_LIGHTING)
     #glDisable(GL_COLOR_MATERIAL)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    glEnable (GL_BLEND)
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
-def SetCamera():
-    glRotatef(x_axis,1.0,0.0,0.0)
-    glRotatef(y_axis,0.0,1.0,0.0)
-    glRotatef(z_axis,0.0,0.0,1.0)
-    glTranslatef(camx,camy,camz)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def Render():
-    global x_axis,y_axis,z_axis
-    global direction
+    global mode,eyex,eyez
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     Set3DMode()
-    SetCamera()
-
     DrawSky()
-    DrawDungeon()
-    DrawBox()
-    t = tm.textures["gobfia0"]
-    DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0 )
-    DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0 )
+
+    if mode:
+        DrawDungeon()
+        DrawBox()
+        global gobval,gob
+        t = tm.textures["gobfi{}0".format(gobval[gob])]
+        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0 )
+        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0 )
+    else:
+        glBindTexture(GL_TEXTURE_2D, tm.textures["d2ceil4"]['id'])
+        m.Draw(eyex,eyez)
+
     DrawAxis()
 
     Set2DMode()
@@ -385,7 +417,7 @@ def Render():
     t = tm.textures["eradcate"]
     Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-    DrawText("position ({0:.2f},{1:.2f},{2:.2f}) angle {3:.2f}".format(camx,camy,camz,angle))
+    DrawText("position ({0:.2f},{1:.2f},{2:.2f}) angles ({3:.2f} {4:.2f}). [TAB] to toggle mapdata".format(eyex,eyey,eyez,angle, angle2))
 
     glutSwapBuffers();
 
@@ -421,15 +453,28 @@ def main():
     tm.LoadTexture ("icons", "malea01")
 
     tm.LoadTexture ("sprites08", "gobfia0", True) # true get first pixel for alpha
+    tm.LoadTexture ("sprites08", "gobfib0", True)
+    tm.LoadTexture ("sprites08", "gobfic0", True)
+    tm.LoadTexture ("sprites08", "gobfid0", True)
+    tm.LoadTexture ("sprites08", "gobfie0", True)
+    tm.LoadTexture ("sprites08", "gobfif0", True)
+
+    global m
+    m = MMap("outb1.odm")
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
-    glutKeyboardFunc(keyPressed)
+    glutKeyboardFunc(keyPressed) # glutKeyboardUpFunc
+    glutSpecialFunc(keyPressed)
     InitGL()
 
     t = threading.Thread(target=threadInc)
     t.daemon = True
     t.start()
+
+    t2 = threading.Thread(target=threadGob)
+    t2.daemon = True
+    t2.start()
 
     glutMainLoop()
 

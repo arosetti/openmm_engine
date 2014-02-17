@@ -10,7 +10,7 @@ lm.LoadLods('data')
 lod_sprites = lm.GetLod("sprites08")
 if lod_sprites is not None:
     lod_sprites.SaveFiles(dest, "tree")
-    lod_sprites.SaveFiles(dest, "gobfia")
+    lod_sprites.SaveFiles(dest, "gob")
 else:
     print("can't find sprites08")
 
@@ -21,4 +21,10 @@ if lod_icons is not None:
     lod_icons.SaveFiles(dest, "tap")
     lod_icons.SaveFiles(dest, "pcx")
 else:
-    print("can't find sprites08")
+    print("can't find icons")
+
+lod_maps = lm.GetLod("maps")
+if lod_maps is not None:
+    lod_maps.SaveFiles(dest, "out")
+else:
+    print("can't find , maps")
