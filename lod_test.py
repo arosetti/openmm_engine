@@ -10,6 +10,7 @@ lm.LoadLods('data')
 lod_sprites = lm.GetLod("sprites08")
 if lod_sprites is not None:
     lod_sprites.SaveFiles(dest, "tree")
+    lod_sprites.SaveFiles(dest, "gobfia")
 else:
     print("can't find sprites08")
 

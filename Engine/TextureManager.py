@@ -47,8 +47,11 @@ class TextureManager(object):
 
         img = img.convert("RGBA")
 
-        if transparency_color is not None:
-            t=transparency_color
+        if transparency_color is not None and transparency_color != False:
+            if transparency_color == True:
+                t = img.getpixel((0, 0))
+            else:
+                t = transparency_color
             self.transparency_color = t
             for y in range(img.size[1]):
                 for x in range(img.size[0]):

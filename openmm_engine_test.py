@@ -141,9 +141,8 @@ def DrawBox():
 
 def DrawSky():
     glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
-    glScaled(100,100,100);
     glPushMatrix();
-    glTranslatef(0,0,0)
+    glScaled(100,100,100);
     glRotatef(sky_rot, 0.0, 1.0, 0.0);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
@@ -225,8 +224,8 @@ def DrawDungeon():
     glPopMatrix();
 
 def DrawAxis():
-    l = 0.007
-    l2 = 0.0085
+    l = 0.7
+    l2 = 0.85
     glPushMatrix();
     glDisable(GL_COLOR_MATERIAL)
     glDisable(GL_LIGHTING)
@@ -284,6 +283,20 @@ def Draw2DImage(texture, w, h, x, y):
     glEnd()
     glPopMatrix()
 
+def DrawSprite(texture, w, h, x, y, z):
+    glPushMatrix()
+    glBindTexture(GL_TEXTURE_2D, texture)
+    r = float(h)/float(w)
+    glTranslatef(x, y, z)
+    #glRotatef(sky_rot, 0.0, 1.0, 0.0)
+    glBegin(GL_QUADS)
+    glTexCoord2f(1.0, 0.0); glVertex3f(0.0, 0.0,0.0)
+    glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 2.0*r,0.0)
+    glTexCoord2f(0.0, 1.0); glVertex3f(2.0, 2.0*r,0.0)
+    glTexCoord2f(0.0, 0.0); glVertex3f(2.0, 0.0,0.0)
+    glEnd()
+    glPopMatrix()
+
 def InitGL():
     glClearColor(0.1, 0.1, .7, 0.0)
     #glClearDepth(1.0)
@@ -291,7 +304,7 @@ def InitGL():
     glShadeModel(GL_SMOOTH)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
@@ -314,11 +327,12 @@ def Set3DMode():
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
-    #glEnable (GL_BLEND)
     #glBlendEquation(GL_FUNC_ADD)
-    #glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
     #glEnable(GL_LIGHTING)
     #glDisable(GL_COLOR_MATERIAL)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+    glEnable (GL_BLEND)
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def SetCamera():
     glRotatef(x_axis,1.0,0.0,0.0)
@@ -334,9 +348,12 @@ def Render():
     Set3DMode()
     SetCamera()
 
+    DrawSky()
     DrawDungeon()
     DrawBox()
-    DrawSky()
+    t = tm.textures["gobfia0"]
+    DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0 )
+    DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0 )
     DrawAxis()
 
     Set2DMode()
@@ -397,11 +414,13 @@ def main():
     tm.LoadTexture ("icons", "border2.pcx")
     tm.LoadTexture ("icons", "border3")
     tm.LoadTexture ("icons", "border4")
-    tm.LoadTexture ("icons", "tap2", (255,0,0))
+    tm.LoadTexture ("icons", "tap2", (255,0,0)) # specific alpha color
     tm.LoadTexture ("icons", "footer")
 
     tm.LoadTexture ("icons", "eradcate")
     tm.LoadTexture ("icons", "malea01")
+
+    tm.LoadTexture ("sprites08", "gobfia0", True) # true get first pixel for alpha
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
