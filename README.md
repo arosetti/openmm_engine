@@ -8,8 +8,6 @@ Might and Magic 6-7-8 engine attempt.
 
 ![ScreenShot](/res/screen_ui.png)
 
-![ScreenShot](/res/screen1.png)
-
 Requirements
 ========
 
@@ -36,7 +34,7 @@ and uses as textures for walls and floor. :D
 WARNING: use data from mm6! (tested on gentoo linux)
 - run: ./openmm_engine_test.py
 
-![ScreenShot](/res/screen.png)
+![ScreenShot](/res/screen1.png)
 
 Todo 
 ========
