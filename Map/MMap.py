@@ -6,6 +6,7 @@ from Engine import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+from OpenGL.arrays import vbo
 from PIL import Image
 
 import logging, logging.config
@@ -59,44 +60,57 @@ struct ODM
 class MMap(object):
     '''Single lod archive class'''
 
-    def __init__(self, name):
+    def __init__(self, name, lm):
         logging.config.fileConfig('conf/log.conf')
         self.log = logging.getLogger('LOD')
-        self.lm = LodManager()    
-        self.lm.LoadLods('data')
+        self.lm = lm
+        
+        self.tiledata = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
+        self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(name, len(self.tiledata)))
+        #s = struct.unpack_from('@', self.mapdata[:HDR_MAP])
+
         self.mapdata = self.lm.GetLod("maps").GetFileData("", name)['data'] # check error
         self.log.info("Loading \"maps/{}\" {} bytes".format(name, len(self.mapdata)))
         s = struct.unpack_from('@32s32s32s32s32sHHHHHHHH', self.mapdata[:HDR_MAP])
-        print(s)
+        #print(s)
 
         self.heightmap = self.mapdata[HDR_MAP:HDR_MAP+128*128]
         img = Image.new("P", (128,128))
         img.putdata(self.heightmap)
-        img.save("{}.bmp".format(name))
+        img.save("tmp/{}_height.bmp".format(name))
 
-        f = open("{}.dat".format(name), "wb")
+        f = open("tmp/{}_height.dat".format(name), "wb")
         f.write(self.heightmap)
+        f.close()
+        
+        self.tilesetmap = self.mapdata[HDR_MAP+128*128:HDR_MAP+2*128*128]
+        img = Image.new("P", (128,128))
+        img.putdata(self.tilesetmap)
+        img.save("tmp/{}_tile.bmp".format(name))
 
-        self.mesh = numpy.zeros((128,128,3))
+        f = open("tmp/{}_tile.dat".format(name), "wb")
+        f.write(self.tilesetmap)
+        f.close()
+
+        ts = 512
+        hs = 32
+        off = 64
+        self.log.info("building mesh")
+        self.mesh = numpy.empty((128,128,3))
         for x in range(128):
             for z in range(128):
-                height = 0.2 * self.heightmap[x*128+z]
-                self.mesh[x][z] = [float(x),float(height),float(z)]
-
+                height = self.heightmap[x*128+z]
+                self.mesh[x][z] = [ts*float(x-off),hs*float(height),-ts*float(z-off)]
+        self.log.info("building vertexes")
         self.vertexes = None
         self.textures = None
-        for z in range(127):
-            for x in range(127):
-                vertex = numpy.zeros((6,3))
-                #triangle_strip
-                #vertex[0] = [self.mesh[x][z][0], self.mesh[x][z][1], self.mesh[x][z][2]]
-                #vertex[1] = [self.mesh[x+1][z][0], self.mesh[x+1][z][1], self.mesh[x+1][z][2]]
-                #vertex[2] = [self.mesh[x][z+1][0], self.mesh[x][z+1][1], self.mesh[x][z+1][2]]
-                #vertex[3] = [self.mesh[x+1][z+1][0], self.mesh[x+1][z+1][1], self.mesh[x+1][z+1][2]]
-                vertex[0] = [self.mesh[x][z][0] , self.mesh[x][z][1], self.mesh[x][z][2]]
+        for z in range(0,127):
+            for x in range(0,127):
+                vertex = numpy.empty((6,3), dtype='float32')
+                vertex[0] = [self.mesh[x][z][0], self.mesh[x][z][1], self.mesh[x][z][2]]
                 vertex[1] = [self.mesh[x+1][z][0], self.mesh[x+1][z][1], self.mesh[x+1][z][2]]
                 vertex[2] = [self.mesh[x][z+1][0], self.mesh[x][z+1][1], self.mesh[x][z+1][2]]
-                vertex[3] = [self.mesh[x][z][0], self.mesh[x][z][1], self.mesh[x][z][2]]
+                vertex[3] = [self.mesh[x+1][z][0], self.mesh[x+1][z][1], self.mesh[x+1][z][2]]
                 vertex[4] = [self.mesh[x][z+1][0], self.mesh[x][z+1][1], self.mesh[x][z+1][2]]
                 vertex[5] = [self.mesh[x+1][z+1][0], self.mesh[x+1][z+1][1], self.mesh[x+1][z+1][2]]
 
@@ -105,15 +119,11 @@ class MMap(object):
                 else:
                     self.vertexes = vertex
 
-                texture = numpy.zeros((6,2))
-                #texture[0] = [0.0,0.0]
-                #texture[1] = [1.0,0.0]
-                #texture[2] = [0.0,1.0]
-                #texture[3] = [1.0,1.0]
+                texture = numpy.empty((6,2), dtype='float32')
                 texture[0] = [0.0,0.0]
                 texture[1] = [1.0,0.0]
                 texture[2] = [0.0,1.0]
-                texture[3] = [0.0,0.0]
+                texture[3] = [1.0,0.0]
                 texture[4] = [0.0,1.0]
                 texture[5] = [1.0,1.0]
 
@@ -121,51 +131,17 @@ class MMap(object):
                     self.textures = numpy.concatenate([self.textures, texture])
                 else:
                     self.textures = texture
+        self.log.info("map loaded")
 
-    def Draw(self, px, pz):
-        '''
-        # this works but it's slow
-        q = 70
-        minx = px - q/2
-        if minx < 0:
-            minx = 0
-        maxx = px + q/2
-        if minx > 127:
-            maxx = 127
-
-        minz = pz - q/2
-        if minz < 0:
-            minz = 0
-        maxz = pz + q/2
-        if minz > 127:
-            maxz = 127
-
-        for z in range(int(minz),int(maxz)):
-            glBegin(GL_TRIANGLE_STRIP)
-            for x in range(int(minx),int(maxx)):
-                glTexCoord2f(0.0, 0.0);
-                glvertexes3f(self.mesh[x][z][0], 
-                           self.mesh[x][z][1], self.mesh[x][z][2]);
-
-                glTexCoord2f(1.0, 0.0);
-                glvertexes3f(self.mesh[x+1][z][0], self.mesh[x+1][z][1], 
-                           self.mesh[x+1][z][2]);
-
-                glTexCoord2f(0.0, 1.0);
-                glvertexes3f(self.mesh[x][z+1][0], self.mesh[x][z+1][1], 
-                           self.mesh[x][z+1][2]);
-
-                glTexCoord2f(1.0, 1.0);
-                glvertexes3f(self.mesh[x+1][z+1][0], 
-                           self.mesh[x+1][z+1][1], 
-                           self.mesh[x+1][z+1][2]);
-            glEnd();
-        '''
-
+    def Draw(self):
         #glBindTexture(GL_TEXTURE_2D, tex);
+        glPushMatrix()
+        #glEnableClientState(GL_INDEX_ARRAY) 
         glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState (GL_TEXTURE_COORD_ARRAY)
         glVertexPointer (3, GL_FLOAT, 0, self.vertexes)
-        glTexCoordPointer(2, GL_FLOAT, 0, self.textures);
+        glEnableClientState (GL_TEXTURE_COORD_ARRAY)
+        glTexCoordPointer(2, GL_FLOAT, 0, self.textures)
         glDrawArrays(GL_TRIANGLES, 0, len(self.vertexes))
-
+        glDisableClientState (GL_VERTEX_ARRAY)
+        glDisableClientState (GL_TEXTURE_COORD_ARRAY)
+        glPopMatrix()

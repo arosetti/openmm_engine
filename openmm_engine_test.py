@@ -6,8 +6,7 @@ modified to work with python3
 it's an interesting example of use of openg with python
 '''
 
-import io, sys, math, numpy
-
+import io, sys, numpy, math
 from Lod import *
 from Engine import *
 from Map import *
@@ -19,10 +18,47 @@ from PIL import Image
 
 import threading, time
 
+tm = 0 # texmanager
+lm = 0 # lodmanager
+m = 0  # map
+window = 0
+status = 3
+
+status_lock = threading.Lock()
+
+
+sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
+sh = 768
+swf = float(sw) / 640.0
+shf = float(sh) / 480.0
+
+#camera
+angle = 0.0
+angle2 = 5.0
+eyex = -1260
+eyey = 4864
+eyez = -1555
+lx = math.sin(math.radians(-angle))
+lz = -math.cos(math.radians(-angle))
+ly = math.sin(math.radians(-angle2))
+
 sky_rot = 0.0
 
 gobval = ('a', 'b', 'c', 'd', 'e', 'f')
 gob = 0
+
+def ReadStatus():
+    global status,status_lock
+    status_lock.acquire()
+    val = status
+    status_lock.release()
+    return val
+
+def WriteStatus(val):
+    global status,status_lock
+    status_lock.acquire()
+    status = val
+    status_lock.release()
 
 def threadGob():
     global sky_rot,gob,gobval
@@ -36,39 +72,35 @@ def threadInc():
         time.sleep(.01)
         sky_rot = (sky_rot + 0.007) % 360.0
 
-tm = 0 # texmanager
-lm = 0 # lodmanager
-m = 0  # map
-window = 0
-mode = True
-
-sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
-sh = 768
-swf = float(sw) / 640.0
-shf = float(sh) / 480.0
-
-#camera
-angle = 0.0
-angle2 = 5.0
-eyex = 2.0
-eyey = 0.7
-eyez = 4.0
-lx = math.sin(math.radians(-angle))
-lz = -math.cos(math.radians(-angle))
-ly = math.sin(math.radians(-angle2))
-
 def keyPressed(*args):
     global eyex,eyey,eyez,angle,angle2
     global lx,lz,ly
-    global mode
 
-    rot_step = 5
-    mov_step = .5
-
-    #print(args)
+    rot_step = 0
+    mov_step = 0
+    st = ReadStatus()
+    if st == 2:
+        rot_step = 5
+        mov_step = .5
+    elif st == 3:
+        rot_step = 5
+        mov_step = 512*0.5
 
     if args[0] == b'\t': # escape
-        mode = not mode
+        if st == 2:
+            WriteStatus(3)
+        elif st == 3:
+            WriteStatus(2)
+        angle = 0
+        angle2 = 15
+        if st == 2:
+            eyex = 2.0
+            eyey = 0.7
+            eyez = 4.0
+        elif st == 3:
+            eyex = -1260
+            eyey = 4864
+            eyez = -1555
 
     if args[0] == b'\x1B': # escape
         sys.exit(0)
@@ -109,12 +141,11 @@ def keyPressed(*args):
     if args[0] == 108:
         eyey -= mov_step
 
-
-def DrawBox():
+def DrawBox(x,y,z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
     glPushMatrix();
-    glTranslatef(3.0,-.5,-3.0)
-    glScaled(.4,.4,.4);
+    glTranslatef(x,y,z)
+    glScaled(scale,scale,scale);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
     glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
@@ -146,7 +177,7 @@ def DrawBox():
 def DrawSky():
     glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
     glPushMatrix();
-    glScaled(300,300,300);
+    glScaled(60000,60000,60000);
     glRotatef(sky_rot, 0.0, 1.0, 0.0);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
@@ -315,11 +346,12 @@ def Draw2DImage(texture, w, h, x, y):
     glEnd()
     glPopMatrix()
 
-def DrawSprite(texture, w, h, x, y, z):
+def DrawSprite(texture, w, h, x, y, z, scale):
     glPushMatrix()
     glBindTexture(GL_TEXTURE_2D, texture)
     r = float(h)/float(w)
     glTranslatef(x, y, z)
+    glScaled(scale,scale,scale)
     glRotatef(angle, 0.0, 1.0, 0.0)
     glBegin(GL_QUADS)
     glTexCoord2f(1.0, 0.0); glVertex3f(0.0, 0.0,0.0)
@@ -330,7 +362,7 @@ def DrawSprite(texture, w, h, x, y, z):
     glPopMatrix()
 
 def InitGL():
-    glClearColor(0.1, 0.4, .8, 0.0)
+    glClearColor(0.1, 0.1, .1, 0.0)
     glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
     glShadeModel (GL_FLAT) #glShadeModel(GL_SMOOTH)
@@ -354,7 +386,7 @@ def Set3DMode():
     global eyex,eyey,eyez, lx,lz,ly
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(50.0, float(sw) / float(sh), .1, 3000)
+    gluPerspective(50.0, float(sw) / float(sh), .1, 512*3000)
     gluLookAt(eyex, eyey, eyez,
               eyex + lx, eyey + ly, eyez + lz,
               0.0, 1.0, 0.0)
@@ -369,57 +401,62 @@ def Set3DMode():
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def Render():
-    global mode,eyex,eyez
+    global m
+    global gobval,gob
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    st = ReadStatus()
 
-    Set3DMode()
-    DrawSky()
+    if st == 2 or st == 3:
+        Set3DMode()
+        DrawSky()
 
-    if mode:
+    if st == 2:
         DrawDungeon()
-        DrawBox()
-        global gobval,gob
+        DrawBox(3.0,-0.5,-3.0, .4)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0 )
-        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0 )
-    else:
+        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0, .4 )
+        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, .4 )
+    elif st == 3:
         glBindTexture(GL_TEXTURE_2D, tm.textures["d2ceil4"]['id'])
-        m.Draw(eyex,eyez)
+        m.Draw()
+        DrawBox(-1352.0,2817,1444, 70)
+        t = tm.textures["gobfi{}0".format(gobval[gob])]
+        DrawSprite(t['id'], t['w'], t['h'], -1356.0,2809,1444, 300 )
 
-    DrawAxis()
+    if st == 2 or st == 3:
+        DrawAxis()
+        Set2DMode()
 
-    Set2DMode()
+        t = tm.textures["footer"]
+        Draw2DImage(t['id'], t['w'], t['h'],
+                    0.0,
+                    (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
 
-    t = tm.textures["footer"]
-    Draw2DImage(t['id'], t['w'], t['h'],
-                0.0,
-                (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
+        t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
+        Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
-    t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
-    Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
+        t = tm.textures["border1.pcx"]
+        Draw2DImage(t['id'], t['w'], t['h'],
+                   (sw-swf*float(t['w'])) , (sh - shf*float(t['h'])) )
 
-    t = tm.textures["border1.pcx"]
-    Draw2DImage(t['id'], t['w'], t['h'],
-               (sw-swf*float(t['w'])) , (sh - shf*float(t['h'])) )
+        t = tm.textures["border3"]
+        Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
 
-    t = tm.textures["border3"]
-    Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
+        t = tm.textures["border4"]
+        Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
 
-    t = tm.textures["border4"]
-    Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
+        t = tm.textures["tap2"]
+        Draw2DImage(t['id'], t['w'], t['h'], sw - swf*float(t['w']), 0.0)
 
-    t = tm.textures["tap2"]
-    Draw2DImage(t['id'], t['w'], t['h'], sw - swf*float(t['w']), 0.0)
+        t = tm.textures["malea01"]
+        Draw2DImage(t['id'], t['w'], t['h'], swf*22.0, shf*383.0)
 
-    t = tm.textures["malea01"]
-    Draw2DImage(t['id'], t['w'], t['h'], swf*22.0, shf*383.0)
+        t = tm.textures["eradcate"]
+        Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-    t = tm.textures["eradcate"]
-    Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
+        DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
 
-    DrawText("position ({0:.2f},{1:.2f},{2:.2f}) angles ({3:.2f} {4:.2f}). [TAB] to toggle mapdata".format(eyex,eyey,eyez,angle, angle2))
-
-    glutSwapBuffers();
+    glutSwapBuffers()
 
 def main():
     global window
@@ -427,40 +464,34 @@ def main():
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
     glutInitWindowSize(sw,sh)
     glutInitWindowPosition(200,200)
-
     window = glutCreateWindow(b'Openmm_engine test')
 
-    global lm 
+    global lm, tm
     lm = LodManager()
     lm.LoadLods('data')
-    global tm
     tm = TextureManager(lm)
-
+    tm.LoadTexture ("icons", "mm6title.pcx")
     tm.LoadTexture ("bitmaps", "bemob2b") # wall
     tm.LoadTexture ("bitmaps", "d2ceil4") # ceil
     tm.LoadTexture ("bitmaps", "bcsctr")  # floor
     tm.LoadTexture ("bitmaps", "cbsm")
     tm.LoadTexture ("bitmaps", "sky07")
-
     tm.LoadTexture ("icons", "border1.pcx")
     tm.LoadTexture ("icons", "border2.pcx")
     tm.LoadTexture ("icons", "border3")
     tm.LoadTexture ("icons", "border4")
     tm.LoadTexture ("icons", "tap2", (255,0,0)) # specific alpha color
     tm.LoadTexture ("icons", "footer")
-
     tm.LoadTexture ("icons", "eradcate")
     tm.LoadTexture ("icons", "malea01")
-
     tm.LoadTexture ("sprites08", "gobfia0", True) # true get first pixel for alpha
     tm.LoadTexture ("sprites08", "gobfib0", True)
     tm.LoadTexture ("sprites08", "gobfic0", True)
     tm.LoadTexture ("sprites08", "gobfid0", True)
     tm.LoadTexture ("sprites08", "gobfie0", True)
     tm.LoadTexture ("sprites08", "gobfif0", True)
-
     global m
-    m = MMap("outb1.odm")
+    m = MMap("outb1.odm", lm) #e3
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
@@ -468,9 +499,9 @@ def main():
     glutSpecialFunc(keyPressed)
     InitGL()
 
-    t = threading.Thread(target=threadInc)
-    t.daemon = True
-    t.start()
+    t1 = threading.Thread(target=threadInc)
+    t1.daemon = True
+    t1.start()
 
     t2 = threading.Thread(target=threadGob)
     t2.daemon = True

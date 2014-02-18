@@ -27,9 +27,9 @@ class TextureManager(object):
         pass
 
     def LoadTexture (self, dirname, sfile, transparency_color=None):
+        self.log.info("Loading \"{}/{}\"".format(dirname, sfile))
         ret = self.lm.GetLod(dirname).GetFileData("", sfile) # use try, get rid of ""
         texture_id = self.GetTextureId()
-        
         width = 0
         height = 0
         if ret.get('img_size') is not None:
@@ -47,7 +47,7 @@ class TextureManager(object):
 
         img = img.convert("RGBA")
 
-        if transparency_color is not None and transparency_color != False:
+        if transparency_color is not None and transparency_color != False: # I have to find a better way.. too slow
             if transparency_color == True:
                 t = img.getpixel((0, 0))
             else:
@@ -65,7 +65,7 @@ class TextureManager(object):
         glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT )
         glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
         glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST ) #NEAREST
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_LINEAR ) #any combo
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST ) #any combo
         gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         self.textures[sfile] = {'id': texture_id, 'dir': dirname,
