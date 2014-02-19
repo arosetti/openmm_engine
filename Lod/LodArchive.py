@@ -170,8 +170,8 @@ class LodArchive(object):
                 print("can't handle this directory")
         except ValueError as err:
             self.log.error("{}".format(err))
-        except Exception as err:
-            self.log.error("{}".format(err))
+        #except Exception as err:
+        #    self.log.error("{}".format(err))
         return None
 
     def FileExists(self, sfile):

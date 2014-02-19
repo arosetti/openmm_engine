@@ -12,8 +12,6 @@ from PIL import Image
 import logging, logging.config
 import pprint
 
-HDR_MAP =  176
-
 '''
 struct ODM
 {
@@ -37,8 +35,8 @@ struct ODM
   short height;           // height /// Only exists in MM7 and MM8
   short width2;           // width /// Only exists in MM7 and MM8
   short height2;          // height /// Only exists in MM7 and MM8
-  int unknown; 				/// Only exists in MM7 and MM8
-  int unknown;     			/// Only exists in MM7 and MM8
+  int unknown;                 /// Only exists in MM7 and MM8
+  int unknown;                 /// Only exists in MM7 and MM8
 
  int bModelCount; // number of 3d model data sets
  BModel *bmodels;
@@ -56,24 +54,34 @@ struct ODM
 
 };
 '''
+HDR_MAP  =  176
+TILE_IDX =   16
+DTILE    =    4
+
+def get_filename(data):
+    chunks = data.split(b'\x00')
+    tmp = "{0}".format(chunks[0].decode('latin-1'))
+    return tmp
 
 class MMap(object):
-    '''Single lod archive class'''
+    '''Map class'''
 
-    def __init__(self, name, lm):
+    def __init__(self, name, lm, tm):
         logging.config.fileConfig('conf/log.conf')
         self.log = logging.getLogger('LOD')
         self.lm = lm
-        
-        self.tiledata = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
-        self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(name, len(self.tiledata)))
-        #s = struct.unpack_from('@', self.mapdata[:HDR_MAP])
+        self.tm = tm
 
         self.mapdata = self.lm.GetLod("maps").GetFileData("", name)['data'] # check error
         self.log.info("Loading \"maps/{}\" {} bytes".format(name, len(self.mapdata)))
         s = struct.unpack_from('@32s32s32s32s32sHHHHHHHH', self.mapdata[:HDR_MAP])
         #print(s)
+        #TODO detect version 6,7,8
 
+        self.LoadTileData()
+        self.LoadMapData(name)
+
+    def LoadMapData(self,name):
         self.heightmap = self.mapdata[HDR_MAP:HDR_MAP+128*128]
         img = Image.new("P", (128,128))
         img.putdata(self.heightmap)
@@ -133,10 +141,65 @@ class MMap(object):
                     self.textures = texture
         self.log.info("map loaded")
 
+    def LoadTileData(self):
+        self.tilemap = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
+        self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.tilemap)))
+
+        s = struct.unpack_from('@I', self.tilemap[:DTILE])
+        self.tileinfo = { 'num': s[0],
+                          'idx': self.mapdata[HDR_MAP-TILE_IDX:HDR_MAP] # 16 bytes
+                        }
+        print(self.tileinfo)
+        tex_names = {}
+        s_idx = struct.unpack_from('@HHHHHHHH', self.tileinfo['idx'])
+        print(s_idx)
+        for i in range(256):
+             index = 0
+             if i >= 0xc6:
+                 index = i - 0xc6 + s_idx[7]
+             elif i < 0x5a:
+                 index = i
+             else:
+                 n = int((i - 0x5a) / 0x24)
+                 index = s_idx[n] - n * 0x24
+                 index += i - 0x5a
+             s_tbl = struct.unpack_from('@20sHHH', self.tilemap[DTILE + index*0x1a:DTILE + (index+1)*0x1a])
+             if s_tbl[0][0] == 0:
+                 #print ("pending")
+                 tex_names[i] = {'n1': 'pending'}
+             else:
+                 tex_names[i] = {'n1': get_filename(s_tbl[0])}
+                 #print ("{}: {}".format(index,get_filename(s_tbl[0])))
+             #print(s_tbl[3])
+             if s_tbl[3] == 0x300:
+                 #print("0x300!")
+                 for j in range(0,7,2):
+                     if s_idx[j] == s_tbl[1]:
+                         print(self.tilemap[s_idx[j+1]:s_idx[j+1]+20])
+                         #name2 = tbl[s_idx[j+1]]
+                         #if name2[0] != 0:
+                         #    tex_names[i].update({'n2': name2})
+                         break
+        loaded = []
+        for x in range(256):
+            name = tex_names[x]['n1'].lower()
+            if  name not in loaded:
+                try:
+                    self.tm.LoadTexture("bitmaps", name)
+                except:
+                    continue
+                finally:
+                    loaded += [name]
+
+        for z in range(0,128):
+            for x in range(0,128):
+                nm = tex_names[ self.tilemap[z*128 + x] ]['n1']
+                if nm != "pending":
+                    print("{}: {}".format(x,nm))
+
     def Draw(self):
-        #glBindTexture(GL_TEXTURE_2D, tex);
+        glBindTexture(GL_TEXTURE_2D, self.tm.textures["pending"]['id'])
         glPushMatrix()
-        #glEnableClientState(GL_INDEX_ARRAY) 
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer (3, GL_FLOAT, 0, self.vertexes)
         glEnableClientState (GL_TEXTURE_COORD_ARRAY)

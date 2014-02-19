@@ -33,8 +33,8 @@ swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
 #camera
-angle = 0.0
-angle2 = 5.0
+angle = 90.0
+angle2 = 15.0
 eyex = -1260
 eyey = 4864
 eyez = -1555
@@ -87,20 +87,18 @@ def keyPressed(*args):
         mov_step = 512*0.5
 
     if args[0] == b'\t': # escape
-        if st == 2:
-            WriteStatus(3)
-        elif st == 3:
-            WriteStatus(2)
         angle = 0
         angle2 = 15
-        if st == 2:
+        if st == 3:
             eyex = 2.0
             eyey = 0.7
             eyez = 4.0
-        elif st == 3:
+            WriteStatus(2)
+        elif st == 2:
             eyex = -1260
             eyey = 4864
             eyez = -1555
+            WriteStatus(3)
 
     if args[0] == b'\x1B': # escape
         sys.exit(0)
@@ -110,7 +108,7 @@ def keyPressed(*args):
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == 107:
-        angle2 = 0
+        angle2 = 15
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == 105:
@@ -285,8 +283,13 @@ def DrawDungeon():
     glPopMatrix();
 
 def DrawAxis():
-    l = 1
-    l2 = 1.03
+    global status
+    if status == 3:
+        l=512
+        l2=512+50
+    else:
+        l = 1
+        l2 = 1.03
     glPushMatrix();
     glDisable(GL_COLOR_MATERIAL)
     glDisable(GL_LIGHTING)
@@ -369,6 +372,7 @@ def InitGL():
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+    glFlush()
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
@@ -417,7 +421,6 @@ def Render():
         DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0, .4 )
         DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, .4 )
     elif st == 3:
-        glBindTexture(GL_TEXTURE_2D, tm.textures["d2ceil4"]['id'])
         m.Draw()
         DrawBox(-1352.0,2817,1444, 70)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
@@ -491,7 +494,10 @@ def main():
     tm.LoadTexture ("sprites08", "gobfie0", True)
     tm.LoadTexture ("sprites08", "gobfif0", True)
     global m
-    m = MMap("outb1.odm", lm) #e3
+    if len(sys.argv) > 1:
+        m = MMap("out{}.odm".format(sys.argv[1]), lm, tm)
+    else:
+        m = MMap("outb1.odm", lm, tm)
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
@@ -509,5 +515,5 @@ def main():
 
     glutMainLoop()
 
-if __name__ == "__main__":
+if __name__ == "__main__": [WIP] starting work on terrain tilemap ; test now can load different maps from argv
     main() 
