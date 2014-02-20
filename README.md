@@ -35,12 +35,10 @@ and uses as textures,map,sprites :D
 (the original example code has been taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
 
 WARNING: use data from mm6! (tested on gentoo linux)
-- run: ./openmm_engine_test.py <mapcode>
+- run: ./openmm\_engine\_test.py \<mapcode\>
 
-the codes are the coordinates of the position of the map in Enroth
-first char is one of a b c d e
-second char is one of 1 2 3
-'e3' is new new sorpigal
+Mapcode is a 2 char coordinate of the map of Enroth.
+The first char is one of (a b c d e). The second char is one of (1 2 3). For example 'e3' is new New Sorpigal
 
 as you can se the map is currently messed up. (now is more like the first screen)
 
