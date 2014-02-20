@@ -1,4 +1,4 @@
-openmm_engine v0.3
+openmm_engine v0.3.1
 ========
 
 Might and Magic 6-7-8 engine attempt.
@@ -17,7 +17,7 @@ Requirements
 - numpy
 
 
-WARNING: tested on mm6,7,8 but a few files are still failing to be extracted.
+WARNING: lod classes tested on mm6,7,8 but a few files are still failing to be extracted.
 
 WARNING2: this program is being developed on linux. It's not currently being ever tested on other systems
 
@@ -27,13 +27,22 @@ You can play with the class methods, extract all data or search specific files.
 - run: ./lod_test.py
        ./map_test.py
 
-This is a simple messy opengl example with python3. It loads resources from lod files
+MM6 Opengl Engine Demo
+----------
+This is a simple messy opengl example with python3. It loads resources from mm6 lod files
 and uses as textures,map,sprites :D
 
 (the original example code has been taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
 
 WARNING: use data from mm6! (tested on gentoo linux)
-- run: ./openmm_engine_test.py
+- run: ./openmm_engine_test.py <mapcode>
+
+the codes are the coordinates of the position of the map in Enroth
+first char is one of a b c d e
+second char is one of 1 2 3
+'e3' is new new sorpigal
+
+as you can se the map is currently messed up. (now is more like the first screen)
 
 ![ScreenShot](/res/screen_megatex.png)
 
@@ -41,7 +50,6 @@ Todo
 ========
 - LodManager class: cache of game data, create new lod files, other helpful functions.
 - LodArchive: Threadsafe Lod* class ?
-- Multithreading..
 - GUI class:  buttons, decorators, animations etc...
 - SndArchive class: snd files.
 - 3D engine.... this hurts.
