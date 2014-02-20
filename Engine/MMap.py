@@ -11,6 +11,7 @@ from PIL import Image
 
 import logging, logging.config
 import pprint
+import collections
 
 '''
 struct ODM
@@ -83,21 +84,21 @@ class MMap(object):
 
         # heightmap
         self.heightmap = self.mapdata[HDR_MAP:HDR_MAP+128*128]
-        img = Image.new("P", (128,128))
-        img.putdata(self.heightmap)
-        img.save("tmp/{}_height.bmp".format(name))
-        f = open("tmp/{}_height.dat".format(name), "wb")
-        f.write(self.heightmap)
-        f.close()
+        #img = Image.new("P", (128,128))
+        #img.putdata(self.heightmap)
+        #img.save("tmp/{}_height.bmp".format(name))
+        #f = open("tmp/{}_height.dat".format(name), "wb")
+        #f.write(self.heightmap)
+        #f.close()
 
         #tilemap
         self.tilemap = self.mapdata[HDR_MAP+128*128:HDR_MAP+2*128*128]
-        img = Image.new("P", (128,128))
-        img.putdata(self.tilemap)
-        img.save("tmp/{}_tile.bmp".format(name))
-        f = open("tmp/{}_tile.dat".format(name), "wb")
-        f.write(self.tilemap)
-        f.close()
+        #img = Image.new("P", (128,128))
+        #img.putdata(self.tilemap)
+        #img.save("tmp/{}_tile.bmp".format(name))
+        #f = open("tmp/{}_tile.dat".format(name), "wb")
+        #f.write(self.tilemap)
+        #f.close()
 
         #dtilebin
         self.dtilebin = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
@@ -121,8 +122,8 @@ class MMap(object):
         self.log.info("building vertexes")
         self.vertexes = None
         self.textures = None
-        ntex = self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep']
-        print(ntex)
+        print(self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep'])
+        s = 1.0 / (self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep'])
         for z in range(0,127):
             for x in range(0,127):
                 vertex = numpy.empty((6,3), dtype='float32')
@@ -139,35 +140,23 @@ class MMap(object):
                     self.vertexes = vertex
 
                 tile_type = self.tilemap[x*128+z]
-                #print(tile_type)
+                tile_name = self.tex_names[tile_type]['name']
+                #if self.tex_names[x]['name2'] != '':
+                #    tile_name = self.tex_names[x]['name2']
+                try:
+                    tile_index = self.imglist.index(tile_name)
+                except:
+                    tile_index = self.imglist.index('pending')
                 texture = numpy.empty((6,2), dtype='float32')
-                s  = 1.0/ntex
-                base = 10.5*s
-                top = 11.5*s
-                if tile_type < 10:  ### random textures... yet another test.
-                    base = 30.5*s
-                    top = 31.5*s
-                elif tile_type > 10 and tile_type < 40:
-                    base = 28.5*s
-                    top = 29.5*s
-                elif tile_type >= 40 and tile_type < 70:
-                    base = 27.5*s
-                    top = 28.5*s
-                elif tile_type >= 70 and tile_type < 90:
-                    base = 4.5*s
-                    top = 5.5*s
-                elif tile_type >= 90 and tile_type < 100:
-                    base = 25.5*s
-                    top = 24.5*s
-                else:
-                    base = 17.5*s
-                    top = 18.5*s
+                
+                base = tile_index*s
+                top = (tile_index+1)*s
 
                 texture[0] = [0.0,base]
-                texture[1] = [1.0, base]
-                texture[2] = [0.0,top]
-                texture[3] = [1.0, base]
-                texture[4] = [0.0,top]
+                texture[1] = [0.0, top]
+                texture[2] = [1.0,base]
+                texture[3] = [0.0, top]
+                texture[4] = [1.0,base]
                 texture[5] = [1.0, top]
 
                 if self.textures is not None:
@@ -183,51 +172,52 @@ class MMap(object):
                         }
         print(self.tileinfo)
         self.dtilebin = self.dtilebin[DTILE:]
-        tex_names = {}
+        self.tex_names = {}
         s_idx = struct.unpack_from('@HHHHHHHH', self.tileinfo['idx'])
         print(s_idx)
         for i in range(256):  ### this is a mess
              index = 0
-             if i >= 0xc6:
+             if i >= 0xc6: # roads
                  index = i - 0xc6 + s_idx[7]
-             elif i < 0x5a:
-                 index = i
              else:
-                 n = int((i - 0x5a) / 0x24)
-                 index = s_idx[n] - n * 0x24
-                 index += i - 0x5a
+                 if i < 0x5a: # grass-dirt ?
+                     index = i
+                 else:  # borders
+                     n = int((i - 0x5a) / 0x24)
+                     index = s_idx[n] - n * 0x24
+                     index += i - 0x5a
              s_tbl = struct.unpack_from('=20sHHH', self.dtilebin[index*0x1a:(index+1)*0x1a])
              #print(s_tbl)
              if s_tbl[0][0] == 0:
-                 tex_names[i] = {'n1': 'pending'}
+                 self.tex_names[i] = {'name': 'pending', 'name2': ''}
              else:
-                 tex_names[i] = {'n1': get_filename(s_tbl[0])}
-             print ("{}: {}".format(index,tex_names[i]['n1']))
-             if s_tbl[3] == 512:
-                 for j in range(0,8,2):
-                     if s_idx[j] == s_tbl[1]:
-                         print("yay!")
-                         print("name2 {}".format(self.dtilebin[DTILE + s_idx[j+1]:DTILE + s_idx[j+1]+0x1a]))
-                         #name2 = tbl[s_idx[j+1]]
-                         #if name2[0] != 0:
-                         #    tex_names[i].update({'n2': name2})
-                         break
+                 self.tex_names[i] = {'name': get_filename(s_tbl[0]).lower(), 'name2': ''}
+             print ("name1 {}: {}".format(index, self.tex_names[i]['name']))
+             #if s_tbl[3] == 512:
+             #    for j in range(0,8,2):
+             #        if s_idx[j] == s_tbl[1]:
+             #            s_tbl2 = struct.unpack_from('=20sHHH', self.dtilebin[s_idx[j+1]*0x1a:(s_idx[j+1]+1)*0x1a])
+             #            if s_tbl2[0][0] == 0:
+             #                self.tex_names[i].update({'name2': 'pending'})
+             #            else:
+             #                self.tex_names[i].update({'name2': get_filename(s_tbl2[0]).lower()})
+             #            print ("name2 {}: {}".format(index, self.tex_names[i]['name2']))
+             #            break
         self.imglist = []
         for x in range(256):
-            name = tex_names[x]['n1'].lower()
+            name = self.tex_names[x]['name']
             if  name not in self.imglist:
-                try:
-                    self.tm.LoadTexture("bitmaps", name) # join to megatexture.
-                except:
-                    continue
-                finally:
-                    self.imglist += [name]
-
-        for x in range(0,128):
-            for z in range(0,128):
-                code = self.tilemap[x*128 + z]
-                nm = tex_names[code]['n1']
-                #print("{}: {}".format(code,nm))
+                self.imglist += [name]
+            name = self.tex_names[x]['name2']
+            if  name != '' and name not in self.imglist:
+                self.imglist += [name]
+        #self.imglist.sort()
+        print(self.imglist)
+        #for x in range(0,128):
+        #    for z in range(0,128):
+        #        code = self.tilemap[x*128 + z]
+        #        nm = self.tex_names[code]['name']
+        #        #print("{}: {}".format(code,nm))
 
     def Draw(self):
         #glBindTexture(GL_TEXTURE_2D, self.tm.textures["pending"]['id'])

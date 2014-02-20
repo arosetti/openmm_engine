@@ -220,17 +220,16 @@ class LodArchive(object):
             ret = self.GetFileData("", i)
             if ret is None:
                 return False
-            if ret.get('img_size') is not None:
-                img = Image.new("P", ret['img_size'])
-                img.putdata(ret['data'])
-                img.putpalette(ret['palette'])
-                images[i] = img
+            img = Image.new("P", ret['img_size'])
+            img.putdata(ret['data'])
+            img.putpalette(ret['palette'])
+            images[i] = img
 
-                if width == 0 or img.size[0] > width:
-                    width = img.size[0]
-                if height == 0 or img.size[1] > height:
-                    height = img.size[1]
-                height_tot += height
+            if width == 0 or img.size[0] > width:
+                width = img.size[0]
+            if height == 0 or img.size[1] > height:
+                height = img.size[1]
+            height_tot += height
 
         img_joined = Image.new("RGB", (width, height_tot))
         index = 0
@@ -241,5 +240,6 @@ class LodArchive(object):
                 images[i] = images[i].resize((width,height), Image.ANTIALIAS)
             img_joined.paste(images[i], (0,index*height))
             index += 1
+        img_joined = img_joined.transpose(Image.FLIP_TOP_BOTTOM)
         img_joined.save('tmp/new.bmp')
         return {'img': img_joined, 'imglist': imgs, 'hstep': height}

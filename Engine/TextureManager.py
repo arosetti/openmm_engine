@@ -28,6 +28,7 @@ class TextureManager(object):
 
     def LoadMegaTexture(self, tex_name, dirname, imglist): #TODO join implementation with LoadTexture
         self.log.info("Loading megatexture \"{}\"".format(tex_name))
+        self.log.info("max: {}".format(GL_MAX_TEXTURE_SIZE))
         texture_id = self.GetNewTextureId()
         ret = self.lm.GetLod("bitmaps").GetJoinedImgs(imglist)
 
@@ -78,6 +79,12 @@ class TextureManager(object):
             else:
                 t = transparency_color
             self.transparency_color = t
+            #data = numpy.array(img)
+            #r, g, b, a = data.T
+            #t_areas = (r == t[0]) & (b == t[2]) & (g == t[1])
+            #data[3][t_areas] = 0
+            #data[..., :-1][t_areas] = (0, t[0], t[1], t[2])
+            #img = img.fromarray(data)
             for y in range(img.size[1]):
                 for x in range(img.size[0]):
                     p = img.getpixel((x, y))

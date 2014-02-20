@@ -9,7 +9,6 @@ it's an interesting example of use of openg with python
 import io, sys, numpy, math
 from Lod import *
 from Engine import *
-from Map import *
 
 from OpenGL.GL import *
 from OpenGL.GLUT import *
@@ -83,8 +82,8 @@ def keyPressed(*args):
         rot_step = 5
         mov_step = .5
     elif st == 3:
-        rot_step = 5
-        mov_step = 512*0.5
+        rot_step = 2
+        mov_step = 512*0.7
 
     if args[0] == b'\t': # escape
         angle = 0
@@ -350,18 +349,18 @@ def Draw2DImage(texture, w, h, x, y):
     glEnd()
     glPopMatrix()
 
-def DrawSprite(texture, w, h, x, y, z, scale):
+def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager class
     glPushMatrix()
-    glBindTexture(GL_TEXTURE_2D, texture)
+    glBindTexture(GL_TEXTURE_2D, texture) # this would be a texture relative to the angle between camera and sprite rotation.
     r = float(h)/float(w)
     glTranslatef(x, y, z)
     glScaled(scale,scale,scale)
     glRotatef(angle, 0.0, 1.0, 0.0)
     glBegin(GL_QUADS)
     glTexCoord2f(1.0, 0.0); glVertex3f(0.0, 0.0,0.0)
-    glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 2.0*r,0.0)
-    glTexCoord2f(0.0, 1.0); glVertex3f(2.0, 2.0*r,0.0)
-    glTexCoord2f(0.0, 0.0); glVertex3f(2.0, 0.0,0.0)
+    glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 1.0*r,0.0)
+    glTexCoord2f(0.0, 1.0); glVertex3f(1.0, 1.0*r,0.0)
+    glTexCoord2f(0.0, 0.0); glVertex3f(1.0, 0.0,0.0)
     glEnd()
     glPopMatrix()
 
@@ -391,7 +390,7 @@ def Set3DMode():
     global eyex,eyey,eyez, lx,lz,ly
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(50.0, float(sw) / float(sh), .1, 512*3000)
+    gluPerspective(50.0, 1.1*float(sw) / float(sh), 1, 512*3000)
     gluLookAt(eyex, eyey, eyez,
               eyex + lx, eyey + ly, eyez + lz,
               0.0, 1.0, 0.0)
@@ -419,17 +418,17 @@ def Render():
         DrawDungeon()
         DrawBox(3.0,-0.5,-3.0, .4)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0, .4 )
-        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, .4 )
+        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0, 1 )
+        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, 1 )
     elif st == 3:
         m.Draw()
         m.DrawGameArea()
         DrawBox(-1352.0,2817,1444, 70)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], -1356.0,2809,1444, 300 )
+        DrawSprite(t['id'], t['w'], t['h'], -1356.0,2809,1444, 512 )
 
     if st == 2 or st == 3:
-        DrawAxis()
+        #DrawAxis()
         Set2DMode()
 
         t = tm.textures["footer"]
@@ -459,7 +458,8 @@ def Render():
         t = tm.textures["eradcate"]
         Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-        DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
+        #segfault
+        #DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
 
     glutSwapBuffers()
 
