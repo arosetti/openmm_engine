@@ -7,7 +7,7 @@ class LodManager(object):
     '''Multiple lod archive class'''
    
     def __init__(self):
-        logging.config.fileConfig('conf/log.conf')
+        logging.config.fileConfig(os.path.join("conf", "log.conf"))
         self.log = logging.getLogger('LOD')
         self.lod_list = []
 

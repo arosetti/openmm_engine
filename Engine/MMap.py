@@ -71,7 +71,7 @@ class MMap(object):
     '''Map class'''
 
     def __init__(self, name, lm, tm):
-        logging.config.fileConfig('conf/log.conf')
+        logging.config.fileConfig(os.path.join("conf", "log.conf"))
         self.log = logging.getLogger('LOD')
         self.lm = lm
         self.tm = tm
@@ -139,10 +139,12 @@ class MMap(object):
                 else:
                     self.vertexes = vertex
 
-                tile_type = self.tilemap[x*128+z]
-                tile_name = self.tex_names[tile_type]['name']
-                #if self.tex_names[x]['name2'] != '':
-                #    tile_name = self.tex_names[x]['name2']
+                tile_name = self.GetTileName(x, z)
+                if tile_name is None:
+                    tile_type = self.tilemap[x*128+z]
+                    tile_name = self.tex_names[tile_type]['name']
+                    #if self.tex_names[x]['name2'] != '':
+                    #    tile_name = self.tex_names[x]['name2']
                 try:
                     tile_index = self.imglist.index(tile_name)
                 except:
@@ -165,11 +167,25 @@ class MMap(object):
                     self.textures = texture
         self.log.info("map loaded")
 
+    def GetTileName(self, x, z):
+        c = self.tilemap[z*128+x]
+        #if c == 0x8a:
+        #    return 'wtrdrne'
+        #if c == 0x8b:
+        #    return 'wtrdrse'
+        #if c == 0x8c:
+        #    return 'wtrdrnw'
+        #if c == 0x8d:
+        #    return 'wtrdrsw'
+        #if c == 90:
+        #    return 'wtrtyl'
+        #else:
+        return None
+
     def LoadTileData(self):
         s = struct.unpack_from('@I', self.dtilebin[:DTILE])
         self.tileinfo = { 'num': s[0],
-                          'idx': self.mapdata[HDR_MAP-TILE_IDX:HDR_MAP] # 16 bytes
-                        }
+                          'idx': self.mapdata[HDR_MAP-TILE_IDX:HDR_MAP] }# 16 bytes
         print(self.tileinfo)
         self.dtilebin = self.dtilebin[DTILE:]
         self.tex_names = {}
@@ -187,12 +203,11 @@ class MMap(object):
                      index = s_idx[n] - n * 0x24
                      index += i - 0x5a
              s_tbl = struct.unpack_from('=20sHHH', self.dtilebin[index*0x1a:(index+1)*0x1a])
-             #print(s_tbl)
              if s_tbl[0][0] == 0:
                  self.tex_names[i] = {'name': 'pending', 'name2': ''}
              else:
                  self.tex_names[i] = {'name': get_filename(s_tbl[0]).lower(), 'name2': ''}
-             print ("name1 {}: {}".format(index, self.tex_names[i]['name']))
+             #print ("name1 {}: {}".format(index, self.tex_names[i]['name']))
              #if s_tbl[3] == 512:
              #    for j in range(0,8,2):
              #        if s_idx[j] == s_tbl[1]:
@@ -204,23 +219,25 @@ class MMap(object):
              #            print ("name2 {}: {}".format(index, self.tex_names[i]['name2']))
              #            break
         self.imglist = []
-        for x in range(256):
-            name = self.tex_names[x]['name']
-            if  name not in self.imglist:
-                self.imglist += [name]
-            name = self.tex_names[x]['name2']
-            if  name != '' and name not in self.imglist:
-                self.imglist += [name]
+        for i in self.tex_names:
+            if self.tex_names[i]['name'] not in self.imglist:
+                self.imglist += [self.tex_names[i]['name']]
+            #name = self.tex_names[x]['name2']
+            #if  name != '' and name not in self.imglist:
+            #    self.imglist.append(name)
+
+        for x in ['wtrtyl','wtrdre','wtrdrn','wtrdrne','wtrdrnw','wtrdrs',
+                  'wtrdrse','wtrdrsw','wtrdrw','wtrdrxne','wtrdrxnw','wtrdrxse','wtrdrxsw']:
+            if  x not in self.imglist:
+                self.imglist += [x]
+
+        print(len(self.imglist))
+        self.imglist[:] = [x for x in self.imglist if self.lm.GetLod("bitmaps").FileExists(x)]
         #self.imglist.sort()
         print(self.imglist)
-        #for x in range(0,128):
-        #    for z in range(0,128):
-        #        code = self.tilemap[x*128 + z]
-        #        nm = self.tex_names[code]['name']
-        #        #print("{}: {}".format(code,nm))
+        print(len(self.imglist))
 
     def Draw(self):
-        #glBindTexture(GL_TEXTURE_2D, self.tm.textures["pending"]['id'])
         glBindTexture(GL_TEXTURE_2D, self.tm.textures["tiles_megatexture"]['id'])
         glPushMatrix()
         glEnableClientState(GL_VERTEX_ARRAY)

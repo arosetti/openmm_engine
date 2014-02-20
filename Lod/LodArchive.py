@@ -29,7 +29,7 @@ class LodArchive(object):
     '''Single lod archive class'''
    
     def __init__(self, filename):
-        logging.config.fileConfig('conf/log.conf')
+        logging.config.fileConfig(os.path.join("conf", "log.conf"))
         self.log = logging.getLogger('LOD')
         self.lod_attr = {'filename' : filename }
         self.files = {}
@@ -175,7 +175,10 @@ class LodArchive(object):
         return None
 
     def FileExists(self, sfile):
-        return sfile in self.files.keys() # TODO exact search
+        for i in self.files.keys():
+            if i == sfile:
+                return True
+        return False
 
     def GetFileList(self, filter=""):
         key_list = []
@@ -225,21 +228,22 @@ class LodArchive(object):
             img.putpalette(ret['palette'])
             images[i] = img
 
-            if width == 0 or img.size[0] > width:
+            if img.size[0] > width:
                 width = img.size[0]
-            if height == 0 or img.size[1] > height:
+            if img.size[1] > height:
+                if height != 0:
+                    height_tot += height - img.size[1]
                 height = img.size[1]
             height_tot += height
-
         img_joined = Image.new("RGB", (width, height_tot))
         index = 0
         for i in imgs:
             if not self.FileExists(i):
                 continue
-            if images[i].size[0] != width:
+            if images[i].size[1] != height:
                 images[i] = images[i].resize((width,height), Image.ANTIALIAS)
             img_joined.paste(images[i], (0,index*height))
             index += 1
         img_joined = img_joined.transpose(Image.FLIP_TOP_BOTTOM)
-        img_joined.save('tmp/new.bmp')
+        #img_joined.save('tmp/join.bmp')
         return {'img': img_joined, 'imglist': imgs, 'hstep': height}

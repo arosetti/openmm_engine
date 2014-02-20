@@ -12,7 +12,7 @@ class TextureManager(object):
     '''Texture loading and rendering class'''
    
     def __init__(self, lm):
-        logging.config.fileConfig('conf/log.conf')
+        logging.config.fileConfig(os.path.join("conf", "log.conf"))
         self.log = logging.getLogger('LOD')
         self.textures = {}
         self.max_texture_id = 1
