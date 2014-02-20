@@ -28,3 +28,11 @@ if lod_maps is not None:
     lod_maps.SaveFiles(dest, "out")
 else:
     print("can't find , maps")
+
+lod_bitmaps = lm.GetLod("bitmaps")
+if lod_bitmaps is not None:
+    texlist = ['pending', 'dirttyl', 'grastyl', 'grdrtne', 'grdrtse', 'grdrtnw', 'grdrtsw', 'grdrte', 'grdrtw', 'grdrtn', 'grdrts', 'grdrtxne', 'grdrtxse', 'grdrtxnw', 'grdrtxsw', 'drsrcros', 'drsrns', 'drsrew', 'drsrn_e', 'drsrn_w', 'drsrs_e', 'drsrs_w', 'drsrns_e', 'drsrns_w', 'drsrew_n', 'drsrew_s', 'drsrncap', 'drsrecap', 'drsrscap', 'drsrwcap', 'drrdcros', 'drrdns', 'drrdew', 'drrdn_e', 'drrdn_w', 'drrds_e', 'drrds_w', 'drrdns_e', 'drrdns_w', 'drrdew_n', 'drrdew_s', 'drrdncap', 'drrdecap', 'drrdscap', 'drrdwcap']
+    print(len(texlist))
+    lod_bitmaps.GetJoinedImgs(texlist)
+else:
+    print("can't find , bitmaps")

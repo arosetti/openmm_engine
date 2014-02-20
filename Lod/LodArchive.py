@@ -205,4 +205,41 @@ class LodArchive(object):
         for sfile in self.files:
             if filter in sfile.lower() and not self.SaveFile(dest, sfile):
                 failed += 1
-        return failed   
+        return failed
+
+    def GetJoinedImgs(self, imgs):
+        self.log.info("Loading Joined images \"{}\"".format(imgs))
+        height_tot = 0
+        height = 0
+        width = 0
+        images = {}
+        for i in imgs:
+            if not self.FileExists(i):
+                self.log.info("Missing file \"{}\"".format(i))
+                continue
+            ret = self.GetFileData("", i)
+            if ret is None:
+                return False
+            if ret.get('img_size') is not None:
+                img = Image.new("P", ret['img_size'])
+                img.putdata(ret['data'])
+                img.putpalette(ret['palette'])
+                images[i] = img
+
+                if width == 0 or img.size[0] > width:
+                    width = img.size[0]
+                if height == 0 or img.size[1] > height:
+                    height = img.size[1]
+                height_tot += height
+
+        img_joined = Image.new("RGB", (width, height_tot))
+        index = 0
+        for i in imgs:
+            if not self.FileExists(i):
+                continue
+            if images[i].size[0] != width:
+                images[i] = images[i].resize((width,height), Image.ANTIALIAS)
+            img_joined.paste(images[i], (0,index*height))
+            index += 1
+        img_joined.save('tmp/new.bmp')
+        return {'img': img_joined, 'imglist': imgs, 'hstep': height}

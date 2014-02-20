@@ -18,7 +18,7 @@ class TextureManager(object):
         self.max_texture_id = 1
         self.lm = lm # lodmanager
 
-    def GetTextureId(self): # just for now.. , mutex
+    def GetNewTextureId(self): # just for now.. , mutex
         self.max_texture_id = self.max_texture_id + 1
         return self.max_texture_id
 
@@ -26,10 +26,35 @@ class TextureManager(object):
         glDeleteTextures( 1, texture[name]['id'] ) # checks
         pass
 
+    def LoadMegaTexture(self, tex_name, dirname, imglist): #TODO join implementation with LoadTexture
+        self.log.info("Loading megatexture \"{}\"".format(tex_name))
+        texture_id = self.GetNewTextureId()
+        ret = self.lm.GetLod("bitmaps").GetJoinedImgs(imglist)
+
+        img = ret['img']
+        width = img.size[0]
+        height = img.size[1]
+        img = img.convert("RGBA")
+        image  = img.tobytes("raw", "RGBA", 0, -1)
+
+        glBindTexture     ( GL_TEXTURE_2D, texture_id )
+        glPixelStorei     ( GL_UNPACK_ALIGNMENT,1 )
+        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT )
+        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST ) #NEAREST
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST ) #any combo
+        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
+
+        # TODO check if name already exists
+        self.textures[tex_name] = { 'id': texture_id, 'dir': dirname,
+                                    'w': width, 'h': height,
+                                    'hstep': ret['hstep'] }
+        return True
+
     def LoadTexture (self, dirname, sfile, transparency_color=None):
         self.log.info("Loading \"{}/{}\"".format(dirname, sfile))
         ret = self.lm.GetLod(dirname).GetFileData("", sfile) # use try, get rid of ""
-        texture_id = self.GetTextureId()
+        texture_id = self.GetNewTextureId()
         width = 0
         height = 0
         if ret.get('img_size') is not None:

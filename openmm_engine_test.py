@@ -291,9 +291,9 @@ def DrawAxis():
         l = 1
         l2 = 1.03
     glPushMatrix();
-    glDisable(GL_COLOR_MATERIAL)
-    glDisable(GL_LIGHTING)
-    glDisable(GL_BLEND)
+    #glDisable(GL_COLOR_MATERIAL)
+    #glDisable(GL_LIGHTING)
+    #glDisable(GL_BLEND)
     glDisable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
     glLineWidth(2.0);
@@ -308,15 +308,16 @@ def DrawAxis():
     glVertex3f(0, 0, 0);
     glVertex3f(0, 0, l);
     glEnd();
-
-    glColor3f(1.0, 1.0, 0.2)
-    glRasterPos3f(l2, 0.0, 0.0)
-    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('x'))
-    glRasterPos3f(0.0, l2, 0.0)
-    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('y'))
-    glRasterPos3f(0.0, 0.0, l2)
-    glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
+    # WARNING this causes a segfault on exit on my machine
+    #glColor3f(1.0, 1.0, 0.2)
+    #glRasterPos3f(l2, 0.0, 0.0)
+    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('x'))
+    #glRasterPos3f(0.0, l2, 0.0)
+    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('y'))
+    #glRasterPos3f(0.0, 0.0, l2)
+    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
     glEnable(GL_TEXTURE_2D)
+    glEnable(GL_DEPTH_TEST)
     glPopMatrix();
 
 def DrawText(msg):
@@ -422,6 +423,7 @@ def Render():
         DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, .4 )
     elif st == 3:
         m.Draw()
+        m.DrawGameArea()
         DrawBox(-1352.0,2817,1444, 70)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
         DrawSprite(t['id'], t['w'], t['h'], -1356.0,2809,1444, 300 )
@@ -515,5 +517,5 @@ def main():
 
     glutMainLoop()
 
-if __name__ == "__main__": [WIP] starting work on terrain tilemap ; test now can load different maps from argv
+if __name__ == "__main__":
     main() 

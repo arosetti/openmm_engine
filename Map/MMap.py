@@ -58,6 +58,9 @@ HDR_MAP  =  176
 TILE_IDX =   16
 DTILE    =    4
 
+MAP_SIZE = 128
+MAP_PLAYABLE_SIZE = 88
+
 def get_filename(data):
     chunks = data.split(b'\x00')
     tmp = "{0}".format(chunks[0].decode('latin-1'))
@@ -78,27 +81,33 @@ class MMap(object):
         #print(s)
         #TODO detect version 6,7,8
 
-        self.LoadTileData()
-        self.LoadMapData(name)
-
-    def LoadMapData(self,name):
+        # heightmap
         self.heightmap = self.mapdata[HDR_MAP:HDR_MAP+128*128]
         img = Image.new("P", (128,128))
         img.putdata(self.heightmap)
         img.save("tmp/{}_height.bmp".format(name))
-
         f = open("tmp/{}_height.dat".format(name), "wb")
         f.write(self.heightmap)
         f.close()
-        
-        self.tilesetmap = self.mapdata[HDR_MAP+128*128:HDR_MAP+2*128*128]
-        img = Image.new("P", (128,128))
-        img.putdata(self.tilesetmap)
-        img.save("tmp/{}_tile.bmp".format(name))
 
+        #tilemap
+        self.tilemap = self.mapdata[HDR_MAP+128*128:HDR_MAP+2*128*128]
+        img = Image.new("P", (128,128))
+        img.putdata(self.tilemap)
+        img.save("tmp/{}_tile.bmp".format(name))
         f = open("tmp/{}_tile.dat".format(name), "wb")
-        f.write(self.tilesetmap)
+        f.write(self.tilemap)
         f.close()
+
+        #dtilebin
+        self.dtilebin = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
+        self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
+
+        self.LoadTileData()
+        tm.LoadMegaTexture("tiles_megatexture", "bitmaps", self.imglist )
+        self.LoadMapData(name)
+
+    def LoadMapData(self,name):
 
         ts = 512
         hs = 32
@@ -112,6 +121,8 @@ class MMap(object):
         self.log.info("building vertexes")
         self.vertexes = None
         self.textures = None
+        ntex = self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep']
+        print(ntex)
         for z in range(0,127):
             for x in range(0,127):
                 vertex = numpy.empty((6,3), dtype='float32')
@@ -127,13 +138,37 @@ class MMap(object):
                 else:
                     self.vertexes = vertex
 
+                tile_type = self.tilemap[x*128+z]
+                #print(tile_type)
                 texture = numpy.empty((6,2), dtype='float32')
-                texture[0] = [0.0,0.0]
-                texture[1] = [1.0,0.0]
-                texture[2] = [0.0,1.0]
-                texture[3] = [1.0,0.0]
-                texture[4] = [0.0,1.0]
-                texture[5] = [1.0,1.0]
+                s  = 1.0/ntex
+                base = 10.5*s
+                top = 11.5*s
+                if tile_type < 10:  ### random textures... yet another test.
+                    base = 30.5*s
+                    top = 31.5*s
+                elif tile_type > 10 and tile_type < 40:
+                    base = 28.5*s
+                    top = 29.5*s
+                elif tile_type >= 40 and tile_type < 70:
+                    base = 27.5*s
+                    top = 28.5*s
+                elif tile_type >= 70 and tile_type < 90:
+                    base = 4.5*s
+                    top = 5.5*s
+                elif tile_type >= 90 and tile_type < 100:
+                    base = 25.5*s
+                    top = 24.5*s
+                else:
+                    base = 17.5*s
+                    top = 18.5*s
+
+                texture[0] = [0.0,base]
+                texture[1] = [1.0, base]
+                texture[2] = [0.0,top]
+                texture[3] = [1.0, base]
+                texture[4] = [0.0,top]
+                texture[5] = [1.0, top]
 
                 if self.textures is not None:
                     self.textures = numpy.concatenate([self.textures, texture])
@@ -142,18 +177,16 @@ class MMap(object):
         self.log.info("map loaded")
 
     def LoadTileData(self):
-        self.tilemap = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
-        self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.tilemap)))
-
-        s = struct.unpack_from('@I', self.tilemap[:DTILE])
+        s = struct.unpack_from('@I', self.dtilebin[:DTILE])
         self.tileinfo = { 'num': s[0],
                           'idx': self.mapdata[HDR_MAP-TILE_IDX:HDR_MAP] # 16 bytes
                         }
         print(self.tileinfo)
+        self.dtilebin = self.dtilebin[DTILE:]
         tex_names = {}
         s_idx = struct.unpack_from('@HHHHHHHH', self.tileinfo['idx'])
         print(s_idx)
-        for i in range(256):
+        for i in range(256):  ### this is a mess
              index = 0
              if i >= 0xc6:
                  index = i - 0xc6 + s_idx[7]
@@ -163,42 +196,42 @@ class MMap(object):
                  n = int((i - 0x5a) / 0x24)
                  index = s_idx[n] - n * 0x24
                  index += i - 0x5a
-             s_tbl = struct.unpack_from('@20sHHH', self.tilemap[DTILE + index*0x1a:DTILE + (index+1)*0x1a])
+             s_tbl = struct.unpack_from('=20sHHH', self.dtilebin[index*0x1a:(index+1)*0x1a])
+             #print(s_tbl)
              if s_tbl[0][0] == 0:
-                 #print ("pending")
                  tex_names[i] = {'n1': 'pending'}
              else:
                  tex_names[i] = {'n1': get_filename(s_tbl[0])}
-                 #print ("{}: {}".format(index,get_filename(s_tbl[0])))
-             #print(s_tbl[3])
-             if s_tbl[3] == 0x300:
-                 #print("0x300!")
-                 for j in range(0,7,2):
+             print ("{}: {}".format(index,tex_names[i]['n1']))
+             if s_tbl[3] == 512:
+                 for j in range(0,8,2):
                      if s_idx[j] == s_tbl[1]:
-                         print(self.tilemap[s_idx[j+1]:s_idx[j+1]+20])
+                         print("yay!")
+                         print("name2 {}".format(self.dtilebin[DTILE + s_idx[j+1]:DTILE + s_idx[j+1]+0x1a]))
                          #name2 = tbl[s_idx[j+1]]
                          #if name2[0] != 0:
                          #    tex_names[i].update({'n2': name2})
                          break
-        loaded = []
+        self.imglist = []
         for x in range(256):
             name = tex_names[x]['n1'].lower()
-            if  name not in loaded:
+            if  name not in self.imglist:
                 try:
-                    self.tm.LoadTexture("bitmaps", name)
+                    self.tm.LoadTexture("bitmaps", name) # join to megatexture.
                 except:
                     continue
                 finally:
-                    loaded += [name]
+                    self.imglist += [name]
 
-        for z in range(0,128):
-            for x in range(0,128):
-                nm = tex_names[ self.tilemap[z*128 + x] ]['n1']
-                if nm != "pending":
-                    print("{}: {}".format(x,nm))
+        for x in range(0,128):
+            for z in range(0,128):
+                code = self.tilemap[x*128 + z]
+                nm = tex_names[code]['n1']
+                #print("{}: {}".format(code,nm))
 
     def Draw(self):
-        glBindTexture(GL_TEXTURE_2D, self.tm.textures["pending"]['id'])
+        #glBindTexture(GL_TEXTURE_2D, self.tm.textures["pending"]['id'])
+        glBindTexture(GL_TEXTURE_2D, self.tm.textures["tiles_megatexture"]['id'])
         glPushMatrix()
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer (3, GL_FLOAT, 0, self.vertexes)
@@ -208,3 +241,25 @@ class MMap(object):
         glDisableClientState (GL_VERTEX_ARRAY)
         glDisableClientState (GL_TEXTURE_COORD_ARRAY)
         glPopMatrix()
+
+    def DrawGameArea(self):
+        glPushMatrix();
+        glDisable(GL_TEXTURE_2D)
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(2.0);
+        glBegin(GL_LINES);
+        glColor3f(0,0,0);
+        glVertex3f(512*44, 64, 512*44);
+        glVertex3f(512*44, 64, -512*44);
+
+        glVertex3f(512*44, 64, 512*44);
+        glVertex3f(-512*44, 64, 512*44);
+
+        glVertex3f(-512*44, 64, 512*44);
+        glVertex3f(-512*44, 64, -512*44);
+
+        glVertex3f(-512*44, 64, -512*44);
+        glVertex3f(512*44, 64, -512*44);
+        glEnd();
+        glEnable(GL_TEXTURE_2D)
+        glPopMatrix();
