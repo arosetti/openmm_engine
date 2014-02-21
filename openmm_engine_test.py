@@ -71,7 +71,7 @@ def threadInc():
         time.sleep(.01)
         sky_rot = (sky_rot + 0.007) % 360.0
 
-def keyPressed(*args):
+def KeyPressed(*args):
     global eyex,eyey,eyez,angle,angle2
     global lx,lz,ly
 
@@ -499,12 +499,12 @@ def main():
     if len(sys.argv) > 1:
         m = MMap("out{}.odm".format(sys.argv[1]), lm, tm)
     else:
-        m = MMap("outb1.odm", lm, tm)
+        m = MMap("oute3.odm", lm, tm)
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
-    glutKeyboardFunc(keyPressed) # glutKeyboardUpFunc
-    glutSpecialFunc(keyPressed)
+    glutKeyboardFunc(KeyPressed) # glutKeyboardUpFunc
+    glutSpecialFunc(KeyPressed)
     InitGL()
 
     t1 = threading.Thread(target=threadInc)

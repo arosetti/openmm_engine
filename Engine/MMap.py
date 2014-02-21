@@ -247,7 +247,6 @@ class MMap(object):
         if c == 0x95:
             return 'wtrdrxsw'
 
-
         #vulcaic
         if c >= 0xa2 and c <= 0xad:
             return 'voltyl'
