@@ -26,11 +26,11 @@ class TextureManager(object):
         glDeleteTextures( 1, texture[name]['id'] ) # checks
         pass
 
-    def LoadMegaTexture(self, tex_name, dirname, imglist): #TODO join implementation with LoadTexture
+    def LoadAtlasTexture(self, tex_name, dirname, imglist): #TODO join implementation with LoadTexture
         self.log.info("Loading megatexture \"{}\"".format(tex_name))
         self.log.info("max: {}".format(GL_MAX_TEXTURE_SIZE))
         texture_id = self.GetNewTextureId()
-        ret = self.lm.GetLod("bitmaps").GetJoinedImgs(imglist)
+        ret = self.lm.GetLod("bitmaps").GetAtlas(imglist)
 
         img = ret['img']
         width = img.size[0]
@@ -42,8 +42,8 @@ class TextureManager(object):
         glPixelStorei     ( GL_UNPACK_ALIGNMENT,1 )
         glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT )
         glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST ) #NEAREST
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST ) #any combo
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST ) #NEAREST
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST ) #any combo
         gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         # TODO check if name already exists

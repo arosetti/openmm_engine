@@ -11,7 +11,7 @@ from PIL import Image
 
 import logging, logging.config
 import pprint
-import collections
+from decimal import Decimal
 
 '''
 struct ODM
@@ -105,7 +105,7 @@ class MMap(object):
         self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
 
         self.LoadTileData()
-        tm.LoadMegaTexture("tiles_megatexture", "bitmaps", self.imglist )
+        tm.LoadAtlasTexture("tiles_megatexture", "bitmaps", self.imglist )
         self.LoadMapData(name)
 
     def LoadMapData(self,name):
@@ -123,7 +123,9 @@ class MMap(object):
         self.vertexes = None
         self.textures = None
         print(self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep'])
-        s = 1.0 / (self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep'])
+        print(self.tm.textures["tiles_megatexture"]['h'])
+        print(self.tm.textures["tiles_megatexture"]['hstep'] )
+        s = Decimal(self.tm.textures["tiles_megatexture"]['hstep']) / Decimal(self.tm.textures["tiles_megatexture"]['h'])
         for z in range(0,127):
             for x in range(0,127):
                 vertex = numpy.empty((6,3), dtype='float32')
@@ -149,10 +151,15 @@ class MMap(object):
                     tile_index = self.imglist.index(tile_name)
                 except:
                     tile_index = self.imglist.index('pending')
-                texture = numpy.empty((6,2), dtype='float32')
+                texture = numpy.empty((6,2), dtype='float64')
+
+                if tile_name == 'pending':
+                    print(tile_type)
                 
-                base = tile_index*s
-                top = (tile_index+1)*s
+                base = Decimal(tile_index)*s
+                top = Decimal(tile_index+1)*s
+
+                #print("{} {}".format(base,top))
 
                 texture[0] = [0.0,base]
                 texture[1] = [0.0, top]
@@ -168,18 +175,93 @@ class MMap(object):
         self.log.info("map loaded")
 
     def GetTileName(self, x, z):
-        c = self.tilemap[z*128+x]
-        #if c == 0x8a:
-        #    return 'wtrdrne'
-        #if c == 0x8b:
-        #    return 'wtrdrse'
-        #if c == 0x8c:
-        #    return 'wtrdrnw'
-        #if c == 0x8d:
-        #    return 'wtrdrsw'
-        #if c == 90:
-        #    return 'wtrtyl'
-        #else:
+        c = self.tilemap[x*128+z]
+        if c >= 1 and c <=52:
+            return 'dirttyl'
+        #grass
+        if c >= 0x5a and c <=0x65:
+            return 'grastyl'
+        if c == 0x66:
+            return 'grdrtne'
+        if c == 0x67:
+            return 'grdrtse'
+        if c == 0x68:
+            return 'grdrtnw'
+        if c == 0x69:
+            return 'grdrtsw'
+        if c == 0x6a:
+            return 'grdrte'
+        if c == 0x6b:
+            return 'grdrtw'
+        if c == 0x6c:
+            return 'grdrtn'
+        if c == 0x6d:
+            return 'grdrts'
+        if c == 0x6e:
+            return 'grdrtxne'
+        if c == 0x6f:
+            return 'grdrtxse'
+        if c == 0x70:
+            return 'grdrtxnw'
+        if c == 0x71:
+            return 'grdrtxsw'
+        #water
+        if c >= 0x7e and c <= 0x89:
+            return 'wtrtyl'
+        if c == 0x8a:
+            return 'wtrdrne'
+        if c == 0x8b:
+            return 'wtrdrse'
+        if c == 0x8c:
+            return 'wtrdrnw'
+        if c == 0x8d:
+            return 'wtrdrsw'
+        if c == 0x8e:
+            return 'wtrdre'
+        if c == 0x8f:
+            return 'wtrdrw'
+        if c == 0x90:
+            return 'wtrdrn'
+        if c == 0x91:
+            return 'wtrdrs'
+        if c == 0x92:
+            return 'wtrdrxne'
+        if c == 0x93:
+            return 'wtrdrxse'
+        if c == 0x94:
+            return 'wtrdrxnw'
+        if c == 0x95:
+            return 'wtrdrxsw'
+
+
+        #vulcaic
+        if c >= 0xa2 and c <= 0xad:
+            return 'voltyl'
+        if c == 0xae:
+            return 'voldrtne'
+        if c == 0xaf:
+            return 'voldrtse'
+        if c == 0xb0:
+            return 'voldrtnw'
+        if c == 0xb1:
+            return 'voldrtsw'
+        if c == 0xb2:
+            return 'voldrte'
+        if c == 0xb3:
+            return 'voldrtw'
+        if c == 0xb4:
+            return 'voldrtn'
+        if c == 0xb5:
+            return 'voldrts'
+        if c == 0xb6:
+            return 'voldrtxne'
+        if c == 0xb7:
+            return 'voldrtxse'
+        if c == 0xb8:
+            return 'voldrtxnw'
+        if c == 0xb9:
+            return 'voldrtxsw'
+        #print("cant' finde code {}".format(c))
         return None
 
     def LoadTileData(self):
@@ -226,8 +308,8 @@ class MMap(object):
             #if  name != '' and name not in self.imglist:
             #    self.imglist.append(name)
 
-        for x in ['wtrtyl','wtrdre','wtrdrn','wtrdrne','wtrdrnw','wtrdrs',
-                  'wtrdrse','wtrdrsw','wtrdrw','wtrdrxne','wtrdrxnw','wtrdrxse','wtrdrxsw']:
+        for x in ['wtrtyl','wtrdre','wtrdrn','wtrdrne','wtrdrnw','wtrdrs', 'wtrdrse','wtrdrsw','wtrdrw','wtrdrxne','wtrdrxnw','wtrdrxse','wtrdrxsw',
+                  'voltyl','voldrte','voldrtn','voldrtne','voldrtnw','voldrts', 'voldrtse','voldrtsw','voldrtw','voldrtxne','voldrtxnw','voldrtxse','voldrtxsw']:
             if  x not in self.imglist:
                 self.imglist += [x]
 
@@ -243,7 +325,7 @@ class MMap(object):
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer (3, GL_FLOAT, 0, self.vertexes)
         glEnableClientState (GL_TEXTURE_COORD_ARRAY)
-        glTexCoordPointer(2, GL_FLOAT, 0, self.textures)
+        glTexCoordPointer(2, GL_DOUBLE, 0, self.textures)
         glDrawArrays(GL_TRIANGLES, 0, len(self.vertexes))
         glDisableClientState (GL_VERTEX_ARRAY)
         glDisableClientState (GL_TEXTURE_COORD_ARRAY)
@@ -253,18 +335,18 @@ class MMap(object):
         glPushMatrix();
         glDisable(GL_TEXTURE_2D)
         glDisable(GL_DEPTH_TEST)
-        glLineWidth(2.0);
+        glLineWidth(1.0);
         glBegin(GL_LINES);
-        glColor3f(0,0,0);
+        glColor3f(1,0,0);
         glVertex3f(512*44, 64, 512*44);
         glVertex3f(512*44, 64, -512*44);
-
+        glColor3f(0,1,0);
         glVertex3f(512*44, 64, 512*44);
         glVertex3f(-512*44, 64, 512*44);
-
+        glColor3f(0,0,1);
         glVertex3f(-512*44, 64, 512*44);
         glVertex3f(-512*44, 64, -512*44);
-
+        glColor3f(1,1,0);
         glVertex3f(-512*44, 64, -512*44);
         glVertex3f(512*44, 64, -512*44);
         glEnd();

@@ -1,4 +1,4 @@
-openmm_engine v0.3.1
+openmm_engine v0.3.2
 ========
 
 Might and Magic 6-7-8 engine attempt.
@@ -38,11 +38,16 @@ WARNING: use data from mm6! (tested on gentoo linux)
 - run: ./openmm\_engine\_test.py \<mapcode\>
 
 Mapcode is a 2 char coordinate of the map of Enroth.
-The first char is one of (a b c d e). The second char is one of (1 2 3). For example 'e3' is new New Sorpigal
+The first char is one of (a b c d e). The second char is one of (1 2 3).
+For example 'e3' is new New Sorpigal which is default if you don't specify the code
 
-as you can se the map is currently messed up. (now is more like the first screen)
+as you can see the map is not yet completed.
 
-![ScreenShot](/res/screen_megatex.png)
+![ScreenShot](/res/new_sorpigal.png)
+
+rudimental sprite display and with animation of a goblin
+
+![ScreenShot](/res/screen_ui.png)
 
 Todo 
 ========

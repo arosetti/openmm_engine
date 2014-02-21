@@ -210,7 +210,7 @@ class LodArchive(object):
                 failed += 1
         return failed
 
-    def GetJoinedImgs(self, imgs):
+    def GetAtlas(self, imgs):
         self.log.info("Loading Joined images \"{}\"".format(imgs))
         height_tot = 0
         height = 0
@@ -232,7 +232,7 @@ class LodArchive(object):
                 width = img.size[0]
             if img.size[1] > height:
                 if height != 0:
-                    height_tot += height - img.size[1]
+                    height_tot += img.size[1] - height
                 height = img.size[1]
             height_tot += height
         img_joined = Image.new("RGB", (width, height_tot))
@@ -242,8 +242,8 @@ class LodArchive(object):
                 continue
             if images[i].size[1] != height:
                 images[i] = images[i].resize((width,height), Image.ANTIALIAS)
-            img_joined.paste(images[i], (0,index*height))
+            img_joined.paste(images[i], (0, index*height))
             index += 1
         img_joined = img_joined.transpose(Image.FLIP_TOP_BOTTOM)
-        #img_joined.save('tmp/join.bmp')
+        img_joined.save('tmp/join.bmp')
         return {'img': img_joined, 'imglist': imgs, 'hstep': height}
