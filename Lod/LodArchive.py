@@ -210,7 +210,7 @@ class LodArchive(object):
                 failed += 1
         return failed
 
-    def GetAtlas(self, imgs):
+    def GetAtlas(self, imgs, animated, status):
         self.log.info("Loading Joined images \"{}\"".format(imgs))
         height_tot = 0
         height = 0
@@ -226,6 +226,8 @@ class LodArchive(object):
             img = Image.new("P", ret['img_size'])
             img.putdata(ret['data'])
             img.putpalette(ret['palette'])
+            if i == animated and status == 1:
+                img = img.transpose(Image.FLIP_TOP_BOTTOM)
             images[i] = img
 
             if img.size[0] > width:

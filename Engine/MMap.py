@@ -8,7 +8,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.arrays import vbo
 from PIL import Image
-
+import threading, time
 import logging, logging.config
 import pprint
 from decimal import Decimal
@@ -105,11 +105,25 @@ class MMap(object):
         self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
 
         self.LoadTileData()
-        tm.LoadAtlasTexture("tiles_megatexture", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl' )
+        self.tex_name = "tex_atlas_a"
+        tm.LoadAtlasTexture("tex_atlas_a", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl', 0 )
+        tm.LoadAtlasTexture("tex_atlas_b", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl', 1 )
         self.LoadMapData(name)
 
-    def LoadMapData(self,name):
+        twater = threading.Thread(target=self.threadWater)
+        twater.daemon = True
+        twater.start()
 
+    def threadWater(self):
+        while True:
+            if self.tex_name == "tex_atlas_a":
+                self.tex_name = "tex_atlas_b"
+                time.sleep(.8)
+            else:
+                self.tex_name = "tex_atlas_a"
+                time.sleep(.4)
+
+    def LoadMapData(self,name):
         ts = 512
         hs = 32
         off = 64
@@ -122,10 +136,10 @@ class MMap(object):
         self.log.info("building vertexes")
         self.vertexes = None
         self.textures = None
-        print(self.tm.textures["tiles_megatexture"]['h'] / self.tm.textures["tiles_megatexture"]['hstep'])
-        print(self.tm.textures["tiles_megatexture"]['h'])
-        print(self.tm.textures["tiles_megatexture"]['hstep'] )
-        s = Decimal(self.tm.textures["tiles_megatexture"]['hstep']) / Decimal(self.tm.textures["tiles_megatexture"]['h'])
+        print(self.tm.textures["tex_atlas_a"]['h'] / self.tm.textures["tex_atlas_a"]['hstep'])
+        print(self.tm.textures["tex_atlas_a"]['h'])
+        print(self.tm.textures["tex_atlas_a"]['hstep'] )
+        s = Decimal(self.tm.textures["tex_atlas_a"]['hstep']) / Decimal(self.tm.textures["tex_atlas_a"]['h'])
         for z in range(0,127):
             for x in range(0,127):
                 vertex = numpy.empty((6,3), dtype='float32')
@@ -320,7 +334,7 @@ class MMap(object):
         print(len(self.imglist))
 
     def Draw(self):
-        glBindTexture(GL_TEXTURE_2D, self.tm.textures["tiles_megatexture"]['id'])
+        glBindTexture(GL_TEXTURE_2D, self.tm.textures[self.tex_name]['id'])
         glPushMatrix()
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer (3, GL_FLOAT, 0, self.vertexes)

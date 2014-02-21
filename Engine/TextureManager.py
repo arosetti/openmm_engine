@@ -26,11 +26,11 @@ class TextureManager(object):
         glDeleteTextures( 1, texture[name]['id'] ) # checks
         pass
 
-    def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg): #TODO join implementation with LoadTexture
+    def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg, status): #TODO join implementation with LoadTexture
         self.log.info("Loading megatexture \"{}\"".format(tex_name))
         self.log.info("max: {}".format(GL_MAX_TEXTURE_SIZE))
         texture_id = self.GetNewTextureId()
-        ret = self.lm.GetLod("bitmaps").GetAtlas(imglist)
+        ret = self.lm.GetLod("bitmaps").GetAtlas(imglist, trimg, status)
 
         img = ret['img']
         width = img.size[0]
@@ -45,6 +45,8 @@ class TextureManager(object):
             imgt.putdata(ret2['data'])
             imgt.putpalette(ret2['palette'])
             imgt = imgt.convert("RGBA")
+            if status == 1:
+                imgt = imgt.transpose(Image.FLIP_TOP_BOTTOM)
 
         if trcol is not None:
             for y in range(img.size[1]):
