@@ -6,6 +6,8 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
+[![Video](http://img.youtube.com/vi/w5J2rvrX_14/0.jpg)](http://www.youtube.com/watch?v=w5J2rvrX_14)
+
 ![ScreenShot](/res/screen_road_to_castle_ironfist.png)
 
 Requirements
@@ -23,23 +25,28 @@ WARNING2: this program is being developed on linux. It's not currently being eve
 
 Testing
 ========
+Put the "data" directory containing lod files in the same directory of the scripts.
+
 You can play with the class methods, extract all data or search specific files.
 - run: ./lod_test.py
        ./map_test.py
 
 MM6 Opengl Engine Demo
 ----------
-This is a simple messy opengl example with python3. It loads resources from mm6 lod files
+This is a simple messy opengl example with python3. It loads resources from MM6 lod files
 and uses as textures,map,sprites :D
 
 (the original example code has been taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
 
-WARNING: use data from mm6! (tested on gentoo linux)
+WARNING: use data from MM6! (tested on gentoo linux)
 - run: ./openmm\_engine\_test.py \<mapcode\>
 
 Mapcode is a 2 char coordinate of the map of Enroth.
 The first char is one of (a b c d e). The second char is one of (1 2 3).
 For example 'e3' is new New Sorpigal which is default if you don't specify the code
+
+The keyboard are mapped to the movement system of MMVI. wasd, pag up,down ins...etc.
+That's really bad for a laptop, sorry for now...
 
 as you can see the map is not yet completed.
 
