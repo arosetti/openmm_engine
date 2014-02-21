@@ -26,7 +26,7 @@ class TextureManager(object):
         glDeleteTextures( 1, texture[name]['id'] ) # checks
         pass
 
-    def LoadAtlasTexture(self, tex_name, dirname, imglist): #TODO join implementation with LoadTexture
+    def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg): #TODO join implementation with LoadTexture
         self.log.info("Loading megatexture \"{}\"".format(tex_name))
         self.log.info("max: {}".format(GL_MAX_TEXTURE_SIZE))
         texture_id = self.GetNewTextureId()
@@ -36,6 +36,23 @@ class TextureManager(object):
         width = img.size[0]
         height = img.size[1]
         img = img.convert("RGBA")
+
+
+        ret2 = self.lm.GetLod("bitmaps").GetFileData("", trimg)
+        imgt = 0
+        if ret2.get('img_size') is not None:
+            imgt = Image.new("P", ret2['img_size'])
+            imgt.putdata(ret2['data'])
+            imgt.putpalette(ret2['palette'])
+            imgt = imgt.convert("RGBA")
+
+        if trcol is not None:
+            for y in range(img.size[1]):
+                for x in range(img.size[0]):
+                    p = img.getpixel((x, y))
+                    if set(p) == set((trcol[0], trcol[1], trcol[2], 255)):
+                        img.putpixel((x, y), imgt.getpixel((x%imgt.size[0], y%imgt.size[1])))
+
         image  = img.tobytes("raw", "RGBA", 0, -1)
 
         glBindTexture     ( GL_TEXTURE_2D, texture_id )
@@ -52,7 +69,7 @@ class TextureManager(object):
                                     'hstep': ret['hstep'] }
         return True
 
-    def LoadTexture (self, dirname, sfile, transparency_color=None):
+    def LoadTexture (self, dirname, sfile, trcol=None):
         self.log.info("Loading \"{}/{}\"".format(dirname, sfile))
         ret = self.lm.GetLod(dirname).GetFileData("", sfile) # use try, get rid of ""
         texture_id = self.GetNewTextureId()
@@ -73,12 +90,12 @@ class TextureManager(object):
 
         img = img.convert("RGBA")
 
-        if transparency_color is not None and transparency_color != False: # I have to find a better way.. too slow
-            if transparency_color == True:
+        if trcol is not None and trcol != False: # I have to find a better way.. too slow
+            if trcol == True:
                 t = img.getpixel((0, 0))
             else:
-                t = transparency_color
-            self.transparency_color = t
+                t = trcol
+            self.trcol = t
             #data = numpy.array(img)
             #r, g, b, a = data.T
             #t_areas = (r == t[0]) & (b == t[2]) & (g == t[1])

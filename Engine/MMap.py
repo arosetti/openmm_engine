@@ -105,7 +105,7 @@ class MMap(object):
         self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
 
         self.LoadTileData()
-        tm.LoadAtlasTexture("tiles_megatexture", "bitmaps", self.imglist )
+        tm.LoadAtlasTexture("tiles_megatexture", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl' )
         self.LoadMapData(name)
 
     def LoadMapData(self,name):

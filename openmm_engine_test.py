@@ -133,10 +133,10 @@ def keyPressed(*args):
         eyez -= mov_step * lz
 
     if args[0] == 104:
-        eyey += mov_step
+        eyey += mov_step/2
 
     if args[0] == 108:
-        eyey -= mov_step
+        eyey -= mov_step/2
 
 def DrawBox(x,y,z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
