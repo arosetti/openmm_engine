@@ -6,7 +6,7 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
-[![Video](http://img.youtube.com/vi/w5J2rvrX_14/0.jpg)](http://www.youtube.com/watch?v=w5J2rvrX_14)
+[[Youtube video]](http://www.youtube.com/watch?v=w5J2rvrX_14)
 
 ![ScreenShot](/res/screen_road_to_castle_ironfist.png)
 
