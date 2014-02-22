@@ -32,11 +32,11 @@ swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
 #camera
-angle = 90.0
+angle = 210.0
 angle2 = 15.0
-eyex = -1260
-eyey = 4864
-eyez = -1555
+eyex = 0
+eyey = 3000
+eyez = 0
 lx = math.sin(math.radians(-angle))
 lz = -math.cos(math.radians(-angle))
 ly = math.sin(math.radians(-angle2))
@@ -71,6 +71,10 @@ def threadInc():
         time.sleep(.01)
         sky_rot = (sky_rot + 0.007) % 360.0
 
+def ValidPos(ex,ez,ey):
+    l = 44*512
+    return ( -l < ex < l ) and ( -l < ez < l ) and (0 < ey < l/2)
+
 def KeyPressed(*args):
     global eyex,eyey,eyez,angle,angle2
     global lx,lz,ly
@@ -94,9 +98,9 @@ def KeyPressed(*args):
             eyez = 4.0
             WriteStatus(2)
         elif st == 2:
-            eyex = -1260
-            eyey = 4864
-            eyez = -1555
+            eyex = 0
+            eyey = 3000
+            eyez = 0
             WriteStatus(3)
 
     if args[0] == b'\x1B': # escape
@@ -104,6 +108,8 @@ def KeyPressed(*args):
 
     if args[0] == b'\x7f':
         angle2 = (angle2 + rot_step) % 360
+        if 80 < angle2 < 99:
+            angle2 = 80
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == 107:
@@ -112,6 +118,8 @@ def KeyPressed(*args):
 
     if args[0] == 105:
         angle2 = (angle2 - rot_step) % 360
+        if 100 < angle2 < 300:
+            angle2 = 300
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == b'a':
@@ -125,23 +133,34 @@ def KeyPressed(*args):
         lz = -math.cos(math.radians(-angle))
 
     if args[0] == b'w':
-        eyex += mov_step * lx
-        eyez += mov_step * lz
+        ex = eyex + mov_step * lx
+        ez = eyez + mov_step * lz
+        if ValidPos(ex,ez,eyey):
+            eyex = ex
+            eyez = ez
 
     if args[0] == b's':
-        eyex -= mov_step * lx
-        eyez -= mov_step * lz
+        ex = eyex - mov_step * lx
+        ez = eyez - mov_step * lz
+        if ValidPos(ex,ez,eyey):
+            eyex = ex
+            eyez = ez
 
     if args[0] == 104:
-        eyey += mov_step/2
+        ey = eyey + mov_step/2
+        if ValidPos(eyex,eyez,ey):
+            eyey = ey
 
     if args[0] == 108:
-        eyey -= mov_step/2
+        ey = eyey - mov_step/2
+        if ValidPos(eyex,eyez,ey):
+            eyey = ey
 
 def DrawBox(x,y,z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
     glPushMatrix();
     glTranslatef(x,y,z)
+    glEnable(GL_DEPTH_TEST)
     glScaled(scale,scale,scale);
     glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
@@ -338,6 +357,7 @@ def DrawText(msg):
     glPopMatrix();
 
 def Draw2DImage(texture, w, h, x, y):
+    global swf,shf
     glPushMatrix()
     glBindTexture(GL_TEXTURE_2D, texture)
     glTranslatef(x,y,0)
@@ -351,6 +371,7 @@ def Draw2DImage(texture, w, h, x, y):
 
 def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager class
     glPushMatrix()
+    glEnable(GL_DEPTH_TEST)
     glBindTexture(GL_TEXTURE_2D, texture) # this would be a texture relative to the angle between camera and sprite rotation.
     r = float(h)/float(w)
     glTranslatef(x, y, z)
@@ -372,11 +393,12 @@ def InitGL():
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    glFlush()
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
+    glViewport(0, 0, sw, sh)
     glOrtho(0, sw, sh, 0, -1, 1)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
@@ -386,10 +408,34 @@ def Set2DMode():
     glEnable (GL_BLEND)
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-def Set3DMode():
-    global eyex,eyey,eyez, lx,lz,ly
+def SetMiniMapMode():
+    global eyex,eyey,eyez, lx,lz,ly, sw, sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
+    w = 270
+    glViewport(sw-w, sh-2*w, w, w)
+    gluPerspective(50.0, 1.0, 1, 512*3000)
+    #glOrtho(3,1,3,1,1,3);
+    #glOrtho(0,256,256,0,-1,1)
+    #gluLookAt(
+    #    0,2,0,
+    #    0,0,0,
+    #    0,0,-1)
+
+    glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    glEnable(GL_TEXTURE_2D)
+    glDisable(GL_DEPTH_TEST)
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+    glEnable (GL_BLEND)
+    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glClearColor(.3, 1.0, .3, 0.0)
+
+def Set3DMode(w,h):
+    global eyex,eyey,eyez, lx,lz,ly, sw, sh
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    glViewport(0, h, sw - w, sh-h)
     gluPerspective(50.0, 1.1*float(sw) / float(sh), 1, 512*3000)
     gluLookAt(eyex, eyey, eyez,
               eyex + lx, eyey + ly, eyez + lz,
@@ -405,13 +451,15 @@ def Set3DMode():
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def Render():
-    global m
+    global m,swf,shf
     global gobval,gob
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     st = ReadStatus()
 
     if st == 2 or st == 3:
-        Set3DMode()
+        max_w = int((tm.textures["border1.pcx"]['w']) * swf)
+        max_h = int((tm.textures["footer"]['h'] + tm.textures["border2.pcx"]['h'] - 5) * shf)
+        Set3DMode(max_w, max_h)
         DrawSky()
 
     if st == 2:
@@ -423,12 +471,15 @@ def Render():
     elif st == 3:
         m.Draw()
         m.DrawGameArea()
-        DrawBox(-1352.0,2817,1444, 70)
+        DrawBox(-2000,m.TerrainHeight(-1000, 1000),1500, 90)
         t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], -1356.0,2809,1444, 512 )
+        DrawSprite(t['id'], t['w'], t['h'], -1000.0,m.TerrainHeight(-1000, 1000),1000, 512 )
+
+    #SetMiniMapMode()
+    #m.Draw()
 
     if st == 2 or st == 3:
-        #DrawAxis()
+        DrawAxis()
         Set2DMode()
 
         t = tm.textures["footer"]
@@ -459,8 +510,7 @@ def Render():
         Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
         #segfault
-        #DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
-
+        DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
     glutSwapBuffers()
 
 def main():

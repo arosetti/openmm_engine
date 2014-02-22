@@ -211,14 +211,14 @@ class LodArchive(object):
         return failed
 
     def GetAtlas(self, imgs, animated, status):
-        self.log.info("Loading Joined images \"{}\"".format(imgs))
+        #self.log.info("Loading Joined images \"{}\"".format(imgs))
         height_tot = 0
         height = 0
         width = 0
         images = {}
         for i in imgs:
             if not self.FileExists(i):
-                self.log.info("Missing file \"{}\"".format(i))
+                self.log.info("Missing file \"{}\" !!!".format(i))
                 continue
             ret = self.GetFileData("", i)
             if ret is None:

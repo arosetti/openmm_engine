@@ -76,6 +76,10 @@ class MMap(object):
         self.lm = lm
         self.tm = tm
 
+        self.ts = 512
+        self.hs = 32
+        self.off = 64
+
         self.mapdata = self.lm.GetLod("maps").GetFileData("", name)['data'] # check error
         self.log.info("Loading \"maps/{}\" {} bytes".format(name, len(self.mapdata)))
         s = struct.unpack_from('@32s32s32s32s32sHHHHHHHH', self.mapdata[:HDR_MAP])
@@ -104,6 +108,7 @@ class MMap(object):
         self.dtilebin = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
         self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
 
+
         self.LoadTileData()
         self.tex_name = "tex_atlas_a"
         tm.LoadAtlasTexture("tex_atlas_a", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl', 0 )
@@ -123,22 +128,21 @@ class MMap(object):
                 self.tex_name = "tex_atlas_a"
                 time.sleep(.4)
 
+    def TerrainHeight(self, x, z):
+        x = int(x / self.ts + self.off)
+        z = int(z / self.ts - self.off)
+        return self.mesh[x][z][1]
+
     def LoadMapData(self,name):
-        ts = 512
-        hs = 32
-        off = 64
         self.log.info("building mesh")
         self.mesh = numpy.empty((128,128,3))
         for x in range(128):
             for z in range(128):
-                height = self.heightmap[x*128+z]
-                self.mesh[x][z] = [ts*float(x-off),hs*float(height),-ts*float(z-off)]
+                self.mesh[x][z] = [self.ts*(x-self.off),self.hs*(self.heightmap[x*128+z]),-self.ts*(z-self.off)]
         self.log.info("building vertexes")
         self.vertexes = None
         self.textures = None
-        print(self.tm.textures["tex_atlas_a"]['h'] / self.tm.textures["tex_atlas_a"]['hstep'])
-        print(self.tm.textures["tex_atlas_a"]['h'])
-        print(self.tm.textures["tex_atlas_a"]['hstep'] )
+        #print(self.tm.textures["tex_atlas_a"]['h'] / self.tm.textures["tex_atlas_a"]['hstep'])
         s = Decimal(self.tm.textures["tex_atlas_a"]['hstep']) / Decimal(self.tm.textures["tex_atlas_a"]['h'])
         for z in range(0,127):
             for x in range(0,127):
@@ -159,22 +163,18 @@ class MMap(object):
                 if tile_name is None:
                     tile_type = self.tilemap[x*128+z]
                     tile_name = self.tex_names[tile_type]['name']
-                    #if self.tex_names[x]['name2'] != '':
-                    #    tile_name = self.tex_names[x]['name2']
                 try:
                     tile_index = self.imglist.index(tile_name)
                 except:
                     tile_index = self.imglist.index('pending')
-                texture = numpy.empty((6,2), dtype='float64')
 
                 if tile_name == 'pending':
                     print(tile_type)
                 
                 base = Decimal(tile_index)*s
-                top = Decimal(tile_index+1)*s
+                top = base + s
 
-                #print("{} {}".format(base,top))
-
+                texture = numpy.empty((6,2), dtype='float64')
                 texture[0] = [0.0,base]
                 texture[1] = [0.0, top]
                 texture[2] = [1.0,base]
@@ -188,93 +188,37 @@ class MMap(object):
                     self.textures = texture
         self.log.info("map loaded")
 
-    def GetTileName(self, x, z):
-        c = self.tilemap[x*128+z]
-        if c >= 1 and c <=52:
-            return 'dirttyl'
-        #grass
-        if c >= 0x5a and c <=0x65:
-            return 'grastyl'
-        if c == 0x66:
-            return 'grdrtne'
-        if c == 0x67:
-            return 'grdrtse'
-        if c == 0x68:
-            return 'grdrtnw'
-        if c == 0x69:
-            return 'grdrtsw'
-        if c == 0x6a:
-            return 'grdrte'
-        if c == 0x6b:
-            return 'grdrtw'
-        if c == 0x6c:
-            return 'grdrtn'
-        if c == 0x6d:
-            return 'grdrts'
-        if c == 0x6e:
-            return 'grdrtxne'
-        if c == 0x6f:
-            return 'grdrtxse'
-        if c == 0x70:
-            return 'grdrtxnw'
-        if c == 0x71:
-            return 'grdrtxsw'
-        #water
-        if c >= 0x7e and c <= 0x89:
-            return 'wtrtyl'
-        if c == 0x8a:
-            return 'wtrdrne'
-        if c == 0x8b:
-            return 'wtrdrse'
-        if c == 0x8c:
-            return 'wtrdrnw'
-        if c == 0x8d:
-            return 'wtrdrsw'
-        if c == 0x8e:
-            return 'wtrdre'
-        if c == 0x8f:
-            return 'wtrdrw'
-        if c == 0x90:
-            return 'wtrdrn'
-        if c == 0x91:
-            return 'wtrdrs'
-        if c == 0x92:
-            return 'wtrdrxne'
-        if c == 0x93:
-            return 'wtrdrxse'
-        if c == 0x94:
-            return 'wtrdrxnw'
-        if c == 0x95:
-            return 'wtrdrxsw'
+    def GetTileType(self, c, base): # tile class
+        group_type = ['ne', 'se', 'nw', 'sw', 'e', 'w', 'n', 's', 'xne', 'xse', 'xnw', 'xsw']
+        offset = c - base
+        if 0 <= offset < 12:
+            return group_type[offset]
+        return None
 
-        #vulcaic
-        if c >= 0xa2 and c <= 0xad:
+    def GetTileName(self, x, z): # put odm idx as param, tile class
+        c = self.tilemap[x*128+z]
+        if c >= 1 and c <=0x34:
+            return 'dirttyl'
+
+        if c >= 0x5a and c <=0x65: #grass
+            return 'grastyl'
+        ret = self.GetTileType(c, 0x66)
+        if ret is not None:
+            return 'grdrt{}'.format(ret)
+
+        if c >= 0x7e and c <= 0x89: #water
+            return 'wtrtyl'
+        ret = self.GetTileType(c, 0x8a)
+        if ret is not None:
+            return 'wtrdr{}'.format(ret)
+
+        if c >= 0xa2 and c <= 0xad: #other ...
             return 'voltyl'
-        if c == 0xae:
-            return 'voldrtne'
-        if c == 0xaf:
-            return 'voldrtse'
-        if c == 0xb0:
-            return 'voldrtnw'
-        if c == 0xb1:
-            return 'voldrtsw'
-        if c == 0xb2:
-            return 'voldrte'
-        if c == 0xb3:
-            return 'voldrtw'
-        if c == 0xb4:
-            return 'voldrtn'
-        if c == 0xb5:
-            return 'voldrts'
-        if c == 0xb6:
-            return 'voldrtxne'
-        if c == 0xb7:
-            return 'voldrtxse'
-        if c == 0xb8:
-            return 'voldrtxnw'
-        if c == 0xb9:
-            return 'voldrtxsw'
-        #print("cant' finde code {}".format(c))
+        ret = self.GetTileType(c, 0xae)
+        if ret is not None:
+            return 'voldrt{}'.format(ret)
+
+        #self.log.debug("cant' finde texture code {}".format(c))
         return None
 
     def LoadTileData(self):
@@ -302,24 +246,11 @@ class MMap(object):
                  self.tex_names[i] = {'name': 'pending', 'name2': ''}
              else:
                  self.tex_names[i] = {'name': get_filename(s_tbl[0]).lower(), 'name2': ''}
-             #print ("name1 {}: {}".format(index, self.tex_names[i]['name']))
-             #if s_tbl[3] == 512:
-             #    for j in range(0,8,2):
-             #        if s_idx[j] == s_tbl[1]:
-             #            s_tbl2 = struct.unpack_from('=20sHHH', self.dtilebin[s_idx[j+1]*0x1a:(s_idx[j+1]+1)*0x1a])
-             #            if s_tbl2[0][0] == 0:
-             #                self.tex_names[i].update({'name2': 'pending'})
-             #            else:
-             #                self.tex_names[i].update({'name2': get_filename(s_tbl2[0]).lower()})
-             #            print ("name2 {}: {}".format(index, self.tex_names[i]['name2']))
-             #            break
+
         self.imglist = []
         for i in self.tex_names:
             if self.tex_names[i]['name'] not in self.imglist:
                 self.imglist += [self.tex_names[i]['name']]
-            #name = self.tex_names[x]['name2']
-            #if  name != '' and name not in self.imglist:
-            #    self.imglist.append(name)
 
         for x in ['wtrtyl','wtrdre','wtrdrn','wtrdrne','wtrdrnw','wtrdrs', 'wtrdrse','wtrdrsw','wtrdrw','wtrdrxne','wtrdrxnw','wtrdrxse','wtrdrxsw',
                   'voltyl','voldrte','voldrtn','voldrtne','voldrtnw','voldrts', 'voldrtse','voldrtsw','voldrtw','voldrtxne','voldrtxnw','voldrtxse','voldrtxsw']:

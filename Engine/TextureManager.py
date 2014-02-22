@@ -27,8 +27,7 @@ class TextureManager(object):
         pass
 
     def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg, status): #TODO join implementation with LoadTexture
-        self.log.info("Loading megatexture \"{}\"".format(tex_name))
-        self.log.info("max: {}".format(GL_MAX_TEXTURE_SIZE))
+        self.log.info("Loading atlas texture \"{}\"".format(tex_name))
         texture_id = self.GetNewTextureId()
         ret = self.lm.GetLod("bitmaps").GetAtlas(imglist, trimg, status)
 
@@ -88,7 +87,6 @@ class TextureManager(object):
             img = Image.open(fdata)
             width = img.size[0]
             height = img.size[1]
-            #print("{} {},{}".format(ret['name'], width, height))
 
         img = img.convert("RGBA")
 
