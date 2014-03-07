@@ -33,7 +33,7 @@ shf = float(sh) / 480.0
 
 #camera
 angle = 210.0
-angle2 = 15.0
+angle2 = 10.0
 eyex = 0
 eyey = 3000
 eyez = 0
@@ -73,7 +73,7 @@ def threadInc():
 
 def ValidPos(ex,ez,ey):
     l = 44*512
-    return ( -l < ex < l ) and ( -l < ez < l ) and (0 < ey < l/2)
+    return ( -l < ex < l ) and ( -l < ez < l ) and (0 < ey < l/4)
 
 def KeyPressed(*args):
     global eyex,eyey,eyez,angle,angle2
@@ -91,7 +91,7 @@ def KeyPressed(*args):
 
     if args[0] == b'\t': # escape
         angle = 0
-        angle2 = 15
+        angle2 = 10
         if st == 3:
             eyex = 2.0
             eyey = 0.7
@@ -113,7 +113,7 @@ def KeyPressed(*args):
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == 107:
-        angle2 = 15
+        angle2 = 10
         ly = math.sin(math.radians(-angle2))
 
     if args[0] == 105:
@@ -329,19 +329,19 @@ def DrawAxis():
     # WARNING this causes a segfault on exit on my machine
     #glColor3f(1.0, 1.0, 0.2)
     #glRasterPos3f(l2, 0.0, 0.0)
-    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('x'))
+    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('x'))
     #glRasterPos3f(0.0, l2, 0.0)
-    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('y'))
+    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('y'))
     #glRasterPos3f(0.0, 0.0, l2)
-    #glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord('z'))
+    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('z'))
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
     glPopMatrix();
 
 def DrawText(msg):
     glPushMatrix();
-    glDisable(GL_COLOR_MATERIAL)
-    glDisable(GL_LIGHTING)
+    #glDisable(GL_COLOR_MATERIAL)
+    #glDisable(GL_LIGHTING)
     glDisable(GL_BLEND)
     glDisable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
@@ -352,7 +352,7 @@ def DrawText(msg):
     for c in msg:
         off += 9
         glRasterPos2f(18 + off, hoff)
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(c))
+        glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord(c))
     glEnable(GL_TEXTURE_2D)
     glPopMatrix();
 
@@ -386,14 +386,14 @@ def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager
     glPopMatrix()
 
 def InitGL():
-    glClearColor(0.1, 0.1, .1, 0.0)
-    glClearDepth(1.0)
+    glClearColor(0.1, 0.1, 0.1, 1.0)
+    #glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
-    glShadeModel (GL_FLAT) #glShadeModel(GL_SMOOTH)
+    glShadeModel(GL_SMOOTH) # FLAT
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    #glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
@@ -414,7 +414,7 @@ def SetMiniMapMode():
     glLoadIdentity()
     w = 270
     glViewport(sw-w, sh-2*w, w, w)
-    gluPerspective(50.0, 1.0, 1, 512*3000)
+    gluPerspective(50.0, 1.0, 512, 512*1000)
     #glOrtho(3,1,3,1,1,3);
     #glOrtho(0,256,256,0,-1,1)
     #gluLookAt(
@@ -436,7 +436,7 @@ def Set3DMode(w,h):
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glViewport(0, h, sw - w, sh-h)
-    gluPerspective(50.0, 1.1*float(sw) / float(sh), 1, 512*3000)
+    gluPerspective(45.0, float(sw) / float(sh), 512, 512*250)
     gluLookAt(eyex, eyey, eyez,
               eyex + lx, eyey + ly, eyez + lz,
               0.0, 1.0, 0.0)
@@ -444,12 +444,22 @@ def Set3DMode(w,h):
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
-    #glEnable(GL_LIGHTING)
     #glDisable(GL_COLOR_MATERIAL)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
+    '''
+    lightAmbient = [0.2, 0.3, 0.6, 1.0]
+    lightDiffuse = [0.2, 0.3, 0.6, 1.0]
+    lightPosition = [0,1000,600,1]
+
+    glEnable(GL_LIGHTING);
+    glLightfv(GL_LIGHT0, GL_AMBIENT,lightAmbient)
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse)
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition)
+    glEnable(GL_LIGHT0)
+    '''
 def Render():
     global m,swf,shf
     global gobval,gob
@@ -547,9 +557,9 @@ def main():
     tm.LoadTexture ("sprites08", "gobfif0", True)
     global m
     if len(sys.argv) > 1:
-        m = MMap("out{}.odm".format(sys.argv[1]), lm, tm)
+        m = OdmMap("out{}.odm".format(sys.argv[1]), lm, tm)
     else:
-        m = MMap("oute3.odm", lm, tm)
+        m = OdmMap("oute3.odm", lm, tm)
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)

@@ -57,12 +57,12 @@ class TextureManager(object):
         image  = img.tobytes("raw", "RGBA", 0, -1)
 
         glBindTexture     ( GL_TEXTURE_2D, texture_id )
-        glPixelStorei     ( GL_UNPACK_ALIGNMENT,1 )
-        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT )
-        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST ) #NEAREST
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST ) #any combo
-        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
+        glPixelStorei     ( GL_UNPACK_ALIGNMENT, 1 )
+        glTexParameteri   (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri   (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST )
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST )
+        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height-1, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         # TODO check if name already exists
         self.textures[tex_name] = { 'id': texture_id, 'dir': dirname,

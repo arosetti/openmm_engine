@@ -227,7 +227,7 @@ class LodArchive(object):
             img.putdata(ret['data'])
             img.putpalette(ret['palette'])
             if i == animated and status == 1:
-                img = img.transpose(Image.FLIP_TOP_BOTTOM)
+                img = img.transpose(Image.FLIP_TOP_BOTTOM) # HACK
             images[i] = img
 
             if img.size[0] > width:
