@@ -88,7 +88,6 @@ def get_filename(data):
 
 class OdmMap(object):
     '''Map class'''
-
     def __init__(self, name, lm, tm):
         logging.config.fileConfig(os.path.join("conf", "log.conf"))
         self.log = logging.getLogger('LOD')
@@ -412,4 +411,37 @@ class OdmMap(object):
         glEnable(GL_TEXTURE_2D)
         #glEnable(GL_DEPTH_TEST)
         glEnable (GL_BLEND)
+        glPopMatrix();
+
+    def DrawAxis(self):
+        l=512
+        l2=512+50
+        glPushMatrix();
+        #glDisable(GL_COLOR_MATERIAL)
+        #glDisable(GL_LIGHTING)
+        #glDisable(GL_BLEND)
+        glDisable(GL_TEXTURE_2D)
+        glDisable(GL_DEPTH_TEST)
+        glLineWidth(2.0);
+        glBegin(GL_LINES);
+        glColor3f(1,0,0);
+        glVertex3f(0, 0, 0);
+        glVertex3f(l, 0, 0);
+        glColor3f(0,1,0);
+        glVertex3f(0, 0, 0);
+        glVertex3f(0, l, 0);
+        glColor3f(0,0,1);
+        glVertex3f(0, 0, 0);
+        glVertex3f(0, 0, l);
+        glEnd();
+        # WARNING this causes a segfault on exit
+        #glColor3f(1.0, 1.0, 0.2)
+        #glRasterPos3f(l2, 0.0, 0.0)
+        #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('x'))
+        #glRasterPos3f(0.0, l2, 0.0)
+        #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('y'))
+        #glRasterPos3f(0.0, 0.0, l2)
+        #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('z'))
+        glEnable(GL_TEXTURE_2D)
+        glEnable(GL_DEPTH_TEST)
         glPopMatrix();

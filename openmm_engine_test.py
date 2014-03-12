@@ -22,22 +22,13 @@ lm = 0 # lodmanager
 m = 0  # map
 window = 0
 gravity = True
-fall = 1
 
 sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
 sh = 768
 swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
-#camera
-angle = 130.0
-angle2 = 10.0
-posx = 0
-posy = 3000
-posz = 0
-lx = math.sin(math.radians(-angle))
-lz = -math.cos(math.radians(-angle))
-ly = math.sin(math.radians(-angle2))
+cam = 0 # camera
 
 sky_rot = 0.0
 
@@ -45,100 +36,60 @@ gobval = ('a', 'b', 'c', 'd', 'e', 'f')
 gob = 0
 
 def threadGob():
-    global sky_rot,gob,gobval
+    global gob,gobval
     while True:
         time.sleep(.25)
         gob = (gob + 1) % 6
 
 def threadInc():
-    global sky_rot, posx, posz, posy, fall
+    global sky_rot
     while True:
         time.sleep(.01)
         sky_rot = (sky_rot + 0.007) % 360.0
 
         if gravity:
-            if (posy - 450) > m.TerrainHeight(posx, posz):
-                fall += 1
-                posy -= fall
-            else:
-                fall = 1
-                posy = m.TerrainHeight(posx, posz) + 450
-
-def ValidPos(ex,ez,ey):
-    l = 44*512
-    return ( -l < ex < l ) and ( -l < ez < l ) and (0 < ey < l/4)
+            cam.Fall(m.TerrainHeight(cam.posx, cam.posz))
 
 def KeyPressed(*args):
-    global posx,posy,posz,angle,angle2
-    global lx,lz,ly, gravity
-
-    rot_step = 8
-    mov_step = 512*0.25
+    global gravity
 
     if args[0] == b'\t': # tab
-        angle = 130
-        angle2 = 10
-        posx = 0.
-        posy = 0.
-        posz = 0.
+        cam.DefaultPosition()
 
     if args[0] == b'\x1B': # escape
         sys.exit(0)
 
     if args[0] == b'\x7f':
-        angle2 = (angle2 + rot_step) % 360
-        if 80 < angle2 < 99:
-            angle2 = 80
-        ly = math.sin(math.radians(-angle2))
+        cam.Look(1)
 
     if args[0] == 107:
-        angle2 = 10
-        ly = math.sin(math.radians(-angle2))
+        cam.Look(0)
 
     if args[0] == 105:
-        angle2 = (angle2 - rot_step) % 360
-        if 100 < angle2 < 300:
-            angle2 = 300
-        ly = math.sin(math.radians(-angle2))
+        cam.Look(-1)
 
     if args[0] == b'g':
         gravity = not gravity
 
     if args[0] == b'a':
-        angle = (angle + rot_step) % 360
-        lx = math.sin(math.radians(-angle))
-        lz = -math.cos(math.radians(-angle))
+        cam.Rotate(1)
 
     if args[0] == b'd':
-        angle = (angle - rot_step) % 360
-        lx = math.sin(math.radians(-angle))
-        lz = -math.cos(math.radians(-angle))
+        cam.Rotate(-1)
 
     if args[0] == b'w':
-        ex = posx + mov_step * lx
-        ez = posz + mov_step * lz
-        if ValidPos(ex,ez,posy):
-            posx = ex
-            posz = ez
+        cam.Move(1)
 
     if args[0] == b's':
-        ex = posx - mov_step * lx
-        ez = posz - mov_step * lz
-        if ValidPos(ex,ez,posy):
-            posx = ex
-            posz = ez
+        cam.Move(-1)
 
     if args[0] == 104:
-        ey = posy + mov_step/2
-        if ValidPos(posx,posz,ey):
-            posy = ey
+        cam.Fly(1)
 
     if args[0] == 108:
-        ey = posy - mov_step/2
-        if ValidPos(posx,posz,ey):
-            posy = ey
+        cam.Fly(-1)
 
-def DrawBox(x,y,z, scale):
+def DrawBox(x, y, z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
     glPushMatrix();
     glTranslatef(x,y,z)
@@ -205,40 +156,6 @@ def DrawSky(): # TODO put in OdmMap
     glEnd();
     glPopMatrix();
 
-def DrawAxis():
-    l=512
-    l2=512+50
-
-    glPushMatrix();
-    #glDisable(GL_COLOR_MATERIAL)
-    #glDisable(GL_LIGHTING)
-    #glDisable(GL_BLEND)
-    glDisable(GL_TEXTURE_2D)
-    glDisable(GL_DEPTH_TEST)
-    glLineWidth(2.0);
-    glBegin(GL_LINES);
-    glColor3f(1,0,0);
-    glVertex3f(0, 0, 0);
-    glVertex3f(l, 0, 0);
-    glColor3f(0,1,0);
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, l, 0);
-    glColor3f(0,0,1);
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, 0, l);
-    glEnd();
-    # WARNING this causes a segfault on exit on my machine
-    #glColor3f(1.0, 1.0, 0.2)
-    #glRasterPos3f(l2, 0.0, 0.0)
-    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('x'))
-    #glRasterPos3f(0.0, l2, 0.0)
-    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('y'))
-    #glRasterPos3f(0.0, 0.0, l2)
-    #glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord('z'))
-    glEnable(GL_TEXTURE_2D)
-    glEnable(GL_DEPTH_TEST)
-    glPopMatrix();
-
 def DrawText(msg):
     glPushMatrix();
     #glDisable(GL_COLOR_MATERIAL)
@@ -261,7 +178,7 @@ def Draw2DImage(texture, w, h, x, y):
     global swf,shf
     glPushMatrix()
     glBindTexture(GL_TEXTURE_2D, texture)
-    glTranslatef(x,y,0)
+    glTranslatef(x, y, 0)
     glBegin(GL_QUADS)
     glTexCoord2f(0.0, 1.0); glVertex2f(0.0, 0.0)
     glTexCoord2f(0.0, 0.0); glVertex2f(0.0, h*shf)
@@ -271,13 +188,14 @@ def Draw2DImage(texture, w, h, x, y):
     glPopMatrix()
 
 def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager class
+    global cam
     glPushMatrix()
     glEnable(GL_DEPTH_TEST)
     glBindTexture(GL_TEXTURE_2D, texture) # this would be a texture relative to the angle between camera and sprite rotation.
     r = float(h)/float(w)
     glTranslatef(x, y, z)
-    glScaled(scale,scale,scale)
-    glRotatef(angle, 0.0, 1.0, 0.0)
+    glScaled(scale, scale, scale)
+    glRotatef(cam.angle, 0.0, 1.0, 0.0)
     glBegin(GL_QUADS)
     glTexCoord2f(1.0, 0.0); glVertex3f(0.0, 0.0,0.0)
     glTexCoord2f(1.0, 1.0); glVertex3f(0.0, 1.0*r,0.0)
@@ -310,7 +228,7 @@ def Set2DMode():
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def SetMiniMapMode():
-    global posx,posy,posz, lx,lz,ly, sw, sh
+    global sw,sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     w = 200
@@ -323,7 +241,6 @@ def SetMiniMapMode():
     #    0,2,0,
     #    0,0,0,
     #    0,0,-1)
-
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glEnable(GL_TEXTURE_2D)
@@ -334,14 +251,12 @@ def SetMiniMapMode():
     #glClearColor(.3, 1.0, .3, 0.0)
 
 def Set3DMode(w,h):
-    global posx,posy,posz, lx,lz,ly, sw, sh
+    global sw,sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glViewport(0, h, sw - w, sh-h)
     gluPerspective(45.0, float(sw) / float(sh), 1, 512*250)
-    gluLookAt(posx, posy, posz,
-              posx + lx, posy + ly, posz + lz,
-              0.0, 1.0, 0.0)
+    cam.SetCamera()
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
@@ -350,7 +265,6 @@ def Set3DMode(w,h):
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
     '''
     lightAmbient = [0.2, 0.3, 0.6, 1.0]
     lightDiffuse = [0.2, 0.3, 0.6, 1.0]
@@ -362,6 +276,7 @@ def Set3DMode(w,h):
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition)
     glEnable(GL_LIGHT0)
     '''
+
 def Render():
     global m,swf,shf
     global gobval,gob
@@ -374,14 +289,14 @@ def Render():
 
     m.Draw()
     m.DrawGameArea()
-    DrawBox(-2000,m.TerrainHeight(-1000, 1000)+10,1500, 90)
+    m.DrawAxis()
+    DrawBox(-2000, m.TerrainHeight(-1000, 1000)+10,1500, 90)
     t = tm.textures["gobfi{}0".format(gobval[gob])]
-    DrawSprite(t['id'], t['w'], t['h'], -1000.0,m.TerrainHeight(-1000, 1000)+10,1000, 512 )
+    DrawSprite(t['id'], t['w'], t['h'], -1000.0, m.TerrainHeight(-1000, 1000)+10,1000, 512 )
 
-    SetMiniMapMode()
-    m.Draw()
+    #SetMiniMapMode()
+    #m.Draw()
 
-    DrawAxis()
     Set2DMode()
 
     t = tm.textures["footer"]
@@ -389,7 +304,7 @@ def Render():
                 0.0,
                 (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
 
-    t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
+    t = tm.textures["border2.pcx"] # bug in pillow library for this image (fixed in git version of pillow)
     Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
     t = tm.textures["border1.pcx"]
@@ -412,7 +327,7 @@ def Render():
     Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
     #segfault
-    DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(posx,posy,posz,angle, angle2))
+    DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f})".format(cam.posx, cam.posy, cam.posz, cam.angle, cam.angle2))
 
     glutSwapBuffers()
 
@@ -454,6 +369,9 @@ def main():
         m = OdmMap("out{}.odm".format(sys.argv[1]), lm, tm)
     else:
         m = OdmMap("oute3.odm", lm, tm)
+
+    global cam
+    cam = Camera()
 
     glutDisplayFunc(Render)
     glutIdleFunc(Render)
