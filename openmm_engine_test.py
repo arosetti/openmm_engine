@@ -21,10 +21,8 @@ tm = 0 # texmanager
 lm = 0 # lodmanager
 m = 0  # map
 window = 0
-status = 3
-
-status_lock = threading.Lock()
-
+gravity = True
+fall = 1
 
 sw = 1024  # glutGet(GLUT_WINDOW_WIDTH)
 sh = 768
@@ -32,11 +30,11 @@ swf = float(sw) / 640.0
 shf = float(sh) / 480.0
 
 #camera
-angle = 210.0
+angle = 130.0
 angle2 = 10.0
-eyex = 0
-eyey = 3000
-eyez = 0
+posx = 0
+posy = 3000
+posz = 0
 lx = math.sin(math.radians(-angle))
 lz = -math.cos(math.radians(-angle))
 ly = math.sin(math.radians(-angle2))
@@ -46,19 +44,6 @@ sky_rot = 0.0
 gobval = ('a', 'b', 'c', 'd', 'e', 'f')
 gob = 0
 
-def ReadStatus():
-    global status,status_lock
-    status_lock.acquire()
-    val = status
-    status_lock.release()
-    return val
-
-def WriteStatus(val):
-    global status,status_lock
-    status_lock.acquire()
-    status = val
-    status_lock.release()
-
 def threadGob():
     global sky_rot,gob,gobval
     while True:
@@ -66,42 +51,36 @@ def threadGob():
         gob = (gob + 1) % 6
 
 def threadInc():
-    global sky_rot
+    global sky_rot, posx, posz, posy, fall
     while True:
         time.sleep(.01)
         sky_rot = (sky_rot + 0.007) % 360.0
+
+        if gravity:
+            if (posy - 450) > m.TerrainHeight(posx, posz):
+                fall += 1
+                posy -= fall
+            else:
+                fall = 1
+                posy = m.TerrainHeight(posx, posz) + 450
 
 def ValidPos(ex,ez,ey):
     l = 44*512
     return ( -l < ex < l ) and ( -l < ez < l ) and (0 < ey < l/4)
 
 def KeyPressed(*args):
-    global eyex,eyey,eyez,angle,angle2
-    global lx,lz,ly
+    global posx,posy,posz,angle,angle2
+    global lx,lz,ly, gravity
 
-    rot_step = 0
-    mov_step = 0
-    st = ReadStatus()
-    if st == 2:
-        rot_step = 5
-        mov_step = .5
-    elif st == 3:
-        rot_step = 2
-        mov_step = 512*0.7
+    rot_step = 8
+    mov_step = 512*0.25
 
-    if args[0] == b'\t': # escape
-        angle = 0
+    if args[0] == b'\t': # tab
+        angle = 130
         angle2 = 10
-        if st == 3:
-            eyex = 2.0
-            eyey = 0.7
-            eyez = 4.0
-            WriteStatus(2)
-        elif st == 2:
-            eyex = 0
-            eyey = 3000
-            eyez = 0
-            WriteStatus(3)
+        posx = 0.
+        posy = 0.
+        posz = 0.
 
     if args[0] == b'\x1B': # escape
         sys.exit(0)
@@ -122,6 +101,9 @@ def KeyPressed(*args):
             angle2 = 300
         ly = math.sin(math.radians(-angle2))
 
+    if args[0] == b'g':
+        gravity = not gravity
+
     if args[0] == b'a':
         angle = (angle + rot_step) % 360
         lx = math.sin(math.radians(-angle))
@@ -133,28 +115,28 @@ def KeyPressed(*args):
         lz = -math.cos(math.radians(-angle))
 
     if args[0] == b'w':
-        ex = eyex + mov_step * lx
-        ez = eyez + mov_step * lz
-        if ValidPos(ex,ez,eyey):
-            eyex = ex
-            eyez = ez
+        ex = posx + mov_step * lx
+        ez = posz + mov_step * lz
+        if ValidPos(ex,ez,posy):
+            posx = ex
+            posz = ez
 
     if args[0] == b's':
-        ex = eyex - mov_step * lx
-        ez = eyez - mov_step * lz
-        if ValidPos(ex,ez,eyey):
-            eyex = ex
-            eyez = ez
+        ex = posx - mov_step * lx
+        ez = posz - mov_step * lz
+        if ValidPos(ex,ez,posy):
+            posx = ex
+            posz = ez
 
     if args[0] == 104:
-        ey = eyey + mov_step/2
-        if ValidPos(eyex,eyez,ey):
-            eyey = ey
+        ey = posy + mov_step/2
+        if ValidPos(posx,posz,ey):
+            posy = ey
 
     if args[0] == 108:
-        ey = eyey - mov_step/2
-        if ValidPos(eyex,eyez,ey):
-            eyey = ey
+        ey = posy - mov_step/2
+        if ValidPos(posx,posz,ey):
+            posy = ey
 
 def DrawBox(x,y,z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
@@ -190,7 +172,7 @@ def DrawBox(x,y,z, scale):
     glEnd();
     glPopMatrix();
 
-def DrawSky():
+def DrawSky(): # TODO put in OdmMap
     glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
     glPushMatrix();
     glScaled(60000,60000,60000);
@@ -223,91 +205,10 @@ def DrawSky():
     glEnd();
     glPopMatrix();
 
-matrix = [[0 for i in range(10)] for j in range(10)]
-
-matrix[0][0] = 1
-matrix[0][1] = 1
-matrix[0][2] = 1
-matrix[0][3] = 1
-matrix[0][4] = 1
-matrix[0][5] = 1
-
-matrix[1][5] = 1
-matrix[2][5] = 1
-matrix[3][5] = 1
-matrix[4][5] = 1
-matrix[5][5] = 1
-
-matrix[5][4] = 1
-matrix[5][3] = 1
-matrix[5][2] = 1
-matrix[5][1] = 1
-
-
-matrix[1][3] = 1
-matrix[2][3] = 0
-matrix[3][3] = 1
-matrix[4][3] = 1
-
-def DrawDungeon():
-    glPushMatrix();
-    glTranslatef(-3.0,0.0,0.0)
-    for numz in range(0,10):
-        for num in range(0,10):
-            glBindTexture(GL_TEXTURE_2D, tm.textures["bemob2b"]['id'])   # 2d texture (x and y size)
-            glBegin(GL_QUADS); # floor
-            glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2, -1.0, -1.0 - numz*2);
-            glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2, -1.0, -1.0 - numz*2);
-            glTexCoord2f(0.0, 0.0); glVertex3f( 1.0 + num*2, -1.0,  1.0 - numz*2);
-            glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, -1.0,  1.0 - numz*2);
-            glEnd();
-
-            glBindTexture(GL_TEXTURE_2D, tm.textures["d2ceil4"]['id'])
-            glBegin(GL_QUADS); # roof
-            glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2, 1.0, -1.0 - numz*2);
-            glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2, 1.0, -1.0 - numz*2);
-            glTexCoord2f(0.0, 0.0); glVertex3f( 1.0 + num*2, 1.0,  1.0 - numz*2);
-            glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, 1.0,  1.0 - numz*2);
-            glEnd();
-
-            glBindTexture(GL_TEXTURE_2D, tm.textures["bcsctr"]['id'])   # 2d texture (x and y size)
-            if matrix[num][numz] == 1:
-                glBegin(GL_QUADS);
-                glTexCoord2f(0.0, 0.0); glVertex3f(-1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f( 1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f( 1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f(-1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2,  1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2,  1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 0.0); glVertex3f( 1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f(-1.0 + num*2,  1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 0.0); glVertex3f(-1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f( 1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f( 1.0 + num*2,  1.0, -1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 0.0); glVertex3f( 1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f( 1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f( 1.0 + num*2,  1.0, -1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f( 1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(0.0, 0.0); glVertex3f( 1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(0.0, 0.0); glVertex3f(-1.0 + num*2, -1.0, -1.0 - numz*2);
-                glTexCoord2f(1.0, 0.0); glVertex3f(-1.0 + num*2, -1.0,  1.0 - numz*2);
-                glTexCoord2f(1.0, 1.0); glVertex3f(-1.0 + num*2,  1.0,  1.0 - numz*2);
-                glTexCoord2f(0.0, 1.0); glVertex3f(-1.0 + num*2,  1.0, -1.0 - numz*2);
-                glEnd();
-    glPopMatrix();
-
 def DrawAxis():
-    global status
-    if status == 3:
-        l=512
-        l2=512+50
-    else:
-        l = 1
-        l2 = 1.03
+    l=512
+    l2=512+50
+
     glPushMatrix();
     #glDisable(GL_COLOR_MATERIAL)
     #glDisable(GL_LIGHTING)
@@ -390,8 +291,8 @@ def InitGL():
     #glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
     glShadeModel(GL_SMOOTH) # FLAT
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     #glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -409,13 +310,14 @@ def Set2DMode():
     glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 def SetMiniMapMode():
-    global eyex,eyey,eyez, lx,lz,ly, sw, sh
+    global posx,posy,posz, lx,lz,ly, sw, sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    w = 270
+    w = 200
     glViewport(sw-w, sh-2*w, w, w)
-    gluPerspective(50.0, 1.0, 512, 512*1000)
-    #glOrtho(3,1,3,1,1,3);
+    #gluPerspective(50.0, 1.0, 512, 512*1000)
+    #glFrustum(0,w,w,0,1.,10.)
+    glOrtho(3,1,3,1,1,3);
     #glOrtho(0,256,256,0,-1,1)
     #gluLookAt(
     #    0,2,0,
@@ -426,19 +328,19 @@ def SetMiniMapMode():
     glLoadIdentity()
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    glEnable (GL_BLEND)
-    glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-    glClearColor(.3, 1.0, .3, 0.0)
+    #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
+    #glEnable (GL_BLEND)
+    #glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    #glClearColor(.3, 1.0, .3, 0.0)
 
 def Set3DMode(w,h):
-    global eyex,eyey,eyez, lx,lz,ly, sw, sh
+    global posx,posy,posz, lx,lz,ly, sw, sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glViewport(0, h, sw - w, sh-h)
-    gluPerspective(45.0, float(sw) / float(sh), 512, 512*250)
-    gluLookAt(eyex, eyey, eyez,
-              eyex + lx, eyey + ly, eyez + lz,
+    gluPerspective(45.0, float(sw) / float(sh), 1, 512*250)
+    gluLookAt(posx, posy, posz,
+              posx + lx, posy + ly, posz + lz,
               0.0, 1.0, 0.0)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity();
@@ -464,63 +366,54 @@ def Render():
     global m,swf,shf
     global gobval,gob
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    st = ReadStatus()
 
-    if st == 2 or st == 3:
-        max_w = int((tm.textures["border1.pcx"]['w']) * swf)
-        max_h = int((tm.textures["footer"]['h'] + tm.textures["border2.pcx"]['h'] - 5) * shf)
-        Set3DMode(max_w, max_h)
-        DrawSky()
+    max_w = int((tm.textures["border1.pcx"]['w']) * swf)
+    max_h = int((tm.textures["footer"]['h'] + tm.textures["border2.pcx"]['h'] - 5) * shf)
+    Set3DMode(max_w, max_h)
+    DrawSky()
 
-    if st == 2:
-        DrawDungeon()
-        DrawBox(3.0,-0.5,-3.0, .4)
-        t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], 12.0, -1.0, 0.0, 1 )
-        DrawSprite(t['id'], t['w'], t['h'], 1.0, -1.0, -2.0, 1 )
-    elif st == 3:
-        m.Draw()
-        m.DrawGameArea()
-        DrawBox(-2000,m.TerrainHeight(-1000, 1000),1500, 90)
-        t = tm.textures["gobfi{}0".format(gobval[gob])]
-        DrawSprite(t['id'], t['w'], t['h'], -1000.0,m.TerrainHeight(-1000, 1000),1000, 512 )
+    m.Draw()
+    m.DrawGameArea()
+    DrawBox(-2000,m.TerrainHeight(-1000, 1000)+10,1500, 90)
+    t = tm.textures["gobfi{}0".format(gobval[gob])]
+    DrawSprite(t['id'], t['w'], t['h'], -1000.0,m.TerrainHeight(-1000, 1000)+10,1000, 512 )
 
-    #SetMiniMapMode()
-    #m.Draw()
+    SetMiniMapMode()
+    m.Draw()
 
-    if st == 2 or st == 3:
-        DrawAxis()
-        Set2DMode()
+    DrawAxis()
+    Set2DMode()
 
-        t = tm.textures["footer"]
-        Draw2DImage(t['id'], t['w'], t['h'],
-                    0.0,
-                    (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
+    t = tm.textures["footer"]
+    Draw2DImage(t['id'], t['w'], t['h'],
+                0.0,
+                (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
 
-        t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
-        Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
+    t = tm.textures["border2.pcx"] # there is a problem in pillow library for this image (fixed in git version of pillow)
+    Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
-        t = tm.textures["border1.pcx"]
-        Draw2DImage(t['id'], t['w'], t['h'],
-                   (sw-swf*float(t['w'])) , (sh - shf*float(t['h'])) )
+    t = tm.textures["border1.pcx"]
+    Draw2DImage(t['id'], t['w'], t['h'],
+               (sw-swf*float(t['w'])) , (sh - shf*float(t['h'])) )
 
-        t = tm.textures["border3"]
-        Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
+    t = tm.textures["border3"]
+    Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
 
-        t = tm.textures["border4"]
-        Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
+    t = tm.textures["border4"]
+    Draw2DImage(t['id'], t['w'], t['h'], 0.0, 0.0)
 
-        t = tm.textures["tap2"]
-        Draw2DImage(t['id'], t['w'], t['h'], sw - swf*float(t['w']), 0.0)
+    t = tm.textures["tap2"]
+    Draw2DImage(t['id'], t['w'], t['h'], sw - swf*float(t['w']), 0.0)
 
-        t = tm.textures["malea01"]
-        Draw2DImage(t['id'], t['w'], t['h'], swf*22.0, shf*383.0)
+    t = tm.textures["malea01"]
+    Draw2DImage(t['id'], t['w'], t['h'], swf*22.0, shf*383.0)
 
-        t = tm.textures["eradcate"]
-        Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
+    t = tm.textures["eradcate"]
+    Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-        #segfault
-        DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(eyex,eyey,eyez,angle, angle2))
+    #segfault
+    DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f}). [TAB] toggle testroom".format(posx,posy,posz,angle, angle2))
+
     glutSwapBuffers()
 
 def main():
@@ -555,6 +448,7 @@ def main():
     tm.LoadTexture ("sprites08", "gobfid0", True)
     tm.LoadTexture ("sprites08", "gobfie0", True)
     tm.LoadTexture ("sprites08", "gobfif0", True)
+
     global m
     if len(sys.argv) > 1:
         m = OdmMap("out{}.odm".format(sys.argv[1]), lm, tm)
@@ -578,4 +472,4 @@ def main():
     glutMainLoop()
 
 if __name__ == "__main__":
-    main() 
+    main()

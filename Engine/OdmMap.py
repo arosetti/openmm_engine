@@ -149,8 +149,8 @@ class OdmMap(object):
                 time.sleep(.4)
 
     def TerrainHeight(self, x, z):
-        x = int(x / MAP_TILE_SIZE + MAP_OFFSET)
-        z = int(z / MAP_TILE_SIZE - MAP_OFFSET)
+        x = (x / MAP_TILE_SIZE) + MAP_OFFSET
+        z = -(z / MAP_TILE_SIZE) + MAP_OFFSET
         return self.mesh[x][z][1]
 
     def LoadMapData(self, name):
