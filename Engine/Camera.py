@@ -42,7 +42,7 @@ class Camera(object):
             self.posx = ex
             self.posz = ez
 
-    def Rotate(self, sign): # +1,-1
+    def Rotate(self, sign):
         assert(sign == 1 or sign == -1)
         self.angle = (self.angle + sign * self.rot_step) % 360
         self.lx = math.sin(math.radians(-self.angle))
@@ -55,6 +55,7 @@ class Camera(object):
             self.posy = ey
 
     def Look(self, sign):
+        assert(sign == 1 or sign == -1 or sign == 0)
         self.angle2 = (self.angle2 - sign * self.rot_step) % 360
         if sign == 1:
             if 100 < self.angle2 < 300:
@@ -63,17 +64,17 @@ class Camera(object):
             if 80 < self.angle2 < 99:
                 self.angle2 = 80
         else:
-            angle2 = 10
+            self.angle2 = 10
   
         self.ly = math.sin(math.radians(-self.angle2))
 
     def Fall(self, h):
-        if (self.posy - 450) > h:
-            self.fall += 1
+        if (self.posy - 300) > h:
+            self.fall += .05
             self.posy -= self.fall
         else:
-            self.fall = 1
-            self.posy = h + 450
+            self.fall = 0
+            self.posy = h + 300
 
     def SetCamera(self):
         gluLookAt(self.posx, self.posy, self.posz,

@@ -44,11 +44,20 @@ def threadGob():
 def threadInc():
     global sky_rot
     while True:
-        time.sleep(.01)
-        sky_rot = (sky_rot + 0.007) % 360.0
+        time.sleep(.001)
+        sky_rot = (sky_rot + 0.0007) % 360.0
 
         if gravity:
-            cam.Fall(m.TerrainHeight(cam.posx, cam.posz))
+            h = (m.TerrainHeight(cam.posx, cam.posz) +
+                m.TerrainHeight(cam.posx + 1, cam.posz) +
+                m.TerrainHeight(cam.posx, cam.posz + 1) +
+                m.TerrainHeight(cam.posx + 1, cam.posz + 1) +
+                m.TerrainHeight(cam.posx - 1, cam.posz) +
+                m.TerrainHeight(cam.posx, cam.posz - 1) +
+                m.TerrainHeight(cam.posx - 1, cam.posz - 1) +
+                m.TerrainHeight(cam.posx + 1, cam.posz - 1) +
+                m.TerrainHeight(cam.posx - 1, cam.posz + 1) ) / 9
+            cam.Fall(math.ceil(h))
 
 def KeyPressed(*args):
     global gravity
@@ -209,8 +218,8 @@ def InitGL():
     #glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
     glShadeModel(GL_SMOOTH) # FLAT
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+    #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     #glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
@@ -339,14 +348,17 @@ def main():
     glutInitWindowPosition(200,200)
     window = glutCreateWindow(b'Openmm_engine test')
 
+    if not os.path.exists('tmp'):
+        os.makedirs('tmp')
+
     global lm, tm
     lm = LodManager()
     lm.LoadLods('data')
     tm = TextureManager(lm)
-    tm.LoadTexture ("icons", "mm6title.pcx")
-    tm.LoadTexture ("bitmaps", "bemob2b") # wall
-    tm.LoadTexture ("bitmaps", "d2ceil4") # ceil
-    tm.LoadTexture ("bitmaps", "bcsctr")  # floor
+    #tm.LoadTexture ("icons", "mm6title.pcx")
+    #tm.LoadTexture ("bitmaps", "bemob2b") # wall
+    #tm.LoadTexture ("bitmaps", "d2ceil4") # ceil
+    #tm.LoadTexture ("bitmaps", "bcsctr")  # floor
     tm.LoadTexture ("bitmaps", "cbsm")
     tm.LoadTexture ("bitmaps", "sky07")
     tm.LoadTexture ("icons", "border1.pcx")

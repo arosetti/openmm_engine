@@ -16,9 +16,9 @@ class TextureManager(object):
         self.log = logging.getLogger('LOD')
         self.textures = {}
         self.max_texture_id = 1
-        self.lm = lm # lodmanager
+        self.lm = lm
 
-    def GetNewTextureId(self): # just for now.. , mutex
+    def GetNewTextureId(self):
         self.max_texture_id = self.max_texture_id + 1
         return self.max_texture_id
 
@@ -26,7 +26,7 @@ class TextureManager(object):
         glDeleteTextures( 1, texture[name]['id'] ) # checks
         pass
 
-    def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg, status): #TODO join implementation with LoadTexture
+    def LoadAtlasTexture(self, tex_name, dirname, imglist, trcol, trimg, status):
         self.log.info("Loading atlas texture \"{}\"".format(tex_name))
         texture_id = self.GetNewTextureId()
         ret = self.lm.GetLod("bitmaps").GetAtlas(imglist, trimg, status)
@@ -35,7 +35,6 @@ class TextureManager(object):
         width = img.size[0]
         height = img.size[1]
         img = img.convert("RGBA")
-
 
         ret2 = self.lm.GetLod("bitmaps").GetFileData("", trimg)
         imgt = 0
@@ -57,12 +56,11 @@ class TextureManager(object):
         image  = img.tobytes("raw", "RGBA", 0, -1)
 
         glBindTexture     ( GL_TEXTURE_2D, texture_id )
-        glPixelStorei     ( GL_UNPACK_ALIGNMENT, 1 )
         glTexParameteri   (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
         glTexParameteri   (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_LINEAR )
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_LINEAR )
-        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height-1, GL_RGBA, GL_UNSIGNED_BYTE, image )
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER, GL_NEAREST )
+        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER, GL_NEAREST )
+        gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         # TODO check if name already exists
         self.textures[tex_name] = { 'id': texture_id, 'dir': dirname,
@@ -96,25 +94,20 @@ class TextureManager(object):
             else:
                 t = trcol
             self.trcol = t
-            #data = numpy.array(img)
-            #r, g, b, a = data.T
-            #t_areas = (r == t[0]) & (b == t[2]) & (g == t[1])
-            #data[3][t_areas] = 0
-            #data[..., :-1][t_areas] = (0, t[0], t[1], t[2])
-            #img = img.fromarray(data)
+
             for y in range(img.size[1]):
                 for x in range(img.size[0]):
                     p = img.getpixel((x, y))
                     if set(p) == set((t[0], t[1], t[2], 255)):
-                        img.putpixel((x, y), (p[0], p[1], p[2], 0))
+                        img.putpixel((x, y), (p[0], p[1], p[2], 0)) # TODO use discard fragment shader
 
         image  = img.tobytes("raw", "RGBA", 0, -1)
         glBindTexture     ( GL_TEXTURE_2D, texture_id )   
         glPixelStorei     ( GL_UNPACK_ALIGNMENT,1 )
-        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT )
-        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT )
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST ) #NEAREST
-        glTexParameteri   ( GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST ) #any combo
+        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE )
+        glTexParameterf   ( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE )
+        glTexParameteri   ( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR )
+        glTexParameteri   ( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR )
         gluBuild2DMipmaps ( GL_TEXTURE_2D, GL_RGBA, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image )
 
         self.textures[sfile] = {'id': texture_id, 'dir': dirname,

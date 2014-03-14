@@ -247,5 +247,5 @@ class LodArchive(object):
             img_joined.paste(images[i], (0, index*height))
             index += 1
         img_joined = img_joined.transpose(Image.FLIP_TOP_BOTTOM)
-        img_joined.save('tmp/join.bmp')
+        img_joined.save(os.path.join('tmp','join.bmp'))
         return {'img': img_joined, 'imglist': imgs, 'hstep': height}

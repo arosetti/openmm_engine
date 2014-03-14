@@ -12,7 +12,6 @@ from PIL import Image
 import threading, time
 import logging, logging.config
 import pprint
-from decimal import Decimal
 
 '''
 struct ODM
@@ -164,7 +163,7 @@ class OdmMap(object):
         self.vertices = None
         self.textures = None
         self.colours = None
-        s = Decimal(self.tm.textures["tex_atlas_a"]['hstep']) / Decimal(self.tm.textures["tex_atlas_a"]['h'])
+        s = (self.tm.textures["tex_atlas_a"]['hstep']) / (self.tm.textures["tex_atlas_a"]['h'])
         for z in range(0, MAP_SIZE - 1):
             for x in range(0, MAP_SIZE - 1):
                 vertex = numpy.empty((6,3), dtype='float32')
@@ -202,8 +201,8 @@ class OdmMap(object):
                 
                 #print("{} {} -> {}".format(tile_name, tile_index, tile_code))
                 
-                base = Decimal(tile_index)*s
-                top = base + s
+                base = tile_index * s + (s / 123)
+                top = base + s - 2 * (s / 123)
 
                 texture = numpy.empty((6,2), dtype='float32')
                 texture[0] = [0.0, base]
