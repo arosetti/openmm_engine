@@ -1,4 +1,4 @@
-openmm_engine v0.3.2
+openmm_engine v0.3.3
 ========
 
 Might and Magic 6-7-8 engine attempt.
@@ -6,7 +6,8 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
-[[Youtube video]](http://www.youtube.com/watch?v=w5J2rvrX_14)
+[[New Youtube video]](https://www.youtube.com/watch?v=HxxwzMQU_LI)
+[[First Youtube video]](http://www.youtube.com/watch?v=w5J2rvrX_14)
 
 ![ScreenShot](/res/screen_road_to_castle_ironfist.png)
 

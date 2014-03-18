@@ -93,9 +93,10 @@ class OdmMap(object):
         self.lm = lm
         self.tm = tm
 
-        self.mapdata = self.lm.GetLod("maps").GetFileData("", name)['data'] # check error # remove from class when done
+        self.mapdata = self.lm.GetLod("maps").GetFileData("", name)['data'] # TODO check error # remove from class when done
         self.log.info("Loading \"maps/{}\" {} bytes".format(name, len(self.mapdata)))
         s = struct.unpack_from('@32s32s32s32s32sHHHHHHHH', self.mapdata[:MAP_HDR_SIZE])
+
         if s[2].startswith(b'MM6 Outdoor v1.11'):
             self.version = 6
         elif s[2].startswith(b'MM6 Outdoor v7.00'):
@@ -109,6 +110,7 @@ class OdmMap(object):
 
         #tilemap
         self.tilemap = self.mapdata[TILEMAP_OFFSET:TILEMAP_OFFSET + TILEMAP_SIZE]
+
         '''
         #bmodels
         s = struct.unpack_from('@I', self.mapdata[BMODELS_OFFSET:BMODELS_OFFSET+4])
@@ -123,6 +125,12 @@ class OdmMap(object):
         #self.nsprites = s[0]
         self.sprites = self.mapdata[SPRITES_OFFSET:SPRITES_OFFSET + 0x20 * self.nsprites]
         '''
+
+        # TEXTURES
+        self.log.info("Loading map textures".format(self.version))
+        # sky
+        self.sky_rot = 0.0
+        self.tm.LoadTexture ("bitmaps", "sky07")
         #dtilebin
         self.dtilebin = self.lm.GetLod("icons").GetFileData("", "dtile.bin")['data'] # check error
         self.log.info("Loading \"icons/dtile.bin\" {} bytes".format(len(self.dtilebin)))
@@ -131,11 +139,17 @@ class OdmMap(object):
         self.tex_name = "tex_atlas_a"
         tm.LoadAtlasTexture("tex_atlas_a", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl', 0 )
         tm.LoadAtlasTexture("tex_atlas_b", "bitmaps", self.imglist, (0,0xfc,0xfc), 'wtrtyl', 1 )
-        self.LoadMapData(name)
 
-        twater = threading.Thread(target=self.threadWater)
+        self.LoadMapData()
+
+        # THREADS
+        twater = threading.Thread(target=self.threadWater) # TODO use shaders
         twater.daemon = True
         twater.start()
+
+        t1 = threading.Thread(target=self.threadSky) # TODO do not use a cube.
+        t1.daemon = True
+        t1.start()
 
     def threadWater(self):
         while True:
@@ -146,12 +160,17 @@ class OdmMap(object):
                 self.tex_name = "tex_atlas_a"
                 time.sleep(.4)
 
+    def threadSky(self):
+        while True:
+            time.sleep(.01)
+            self.sky_rot = (self.sky_rot + 0.007) % 360.0
+
     def TerrainHeight(self, x, z):
         x = (x / MAP_TILE_SIZE) + MAP_OFFSET
         z = -(z / MAP_TILE_SIZE) + MAP_OFFSET
         return self.mesh[x][z][1]
 
-    def LoadMapData(self, name):
+    def LoadMapData(self):
         self.log.info("building mesh")
         self.mesh = numpy.empty((MAP_SIZE, MAP_SIZE, 3))
         for x in range(MAP_SIZE):
@@ -162,7 +181,7 @@ class OdmMap(object):
         self.log.info("building vertices")
         self.vertices = None
         self.textures = None
-        self.colours = None
+        self.colors = None
         s = (self.tm.textures["tex_atlas_a"]['hstep']) / (self.tm.textures["tex_atlas_a"]['h'])
         for z in range(0, MAP_SIZE - 1):
             for x in range(0, MAP_SIZE - 1):
@@ -199,10 +218,8 @@ class OdmMap(object):
                 if tile_name == 'pending':
                     print(tile_code)
                 
-                #print("{} {} -> {}".format(tile_name, tile_index, tile_code))
-                
-                base = tile_index * s + (s / 123)
-                top = base + s - 2 * (s / 123)
+                base = tile_index * s + (s / 128)
+                top = base + s - 2 * (s / 128)
 
                 texture = numpy.empty((6,2), dtype='float32')
                 texture[0] = [0.0, base]
@@ -217,38 +234,34 @@ class OdmMap(object):
                 else:
                     self.textures = texture
 
-                h = self.heightmap[x * MAP_SIZE + z]
                 color = numpy.empty((1,3), dtype='float32')
-                if 0 <= h <= 5:
-                    color[0] = [.1, .1, .1]#, 1.0]
-                    #color[1] = [.1, .1, .1, 1.0]
-                elif 6 <= h <= 14:
-                    color[0] = [.2, .2, .2]#, 1.0]
-                    #color[1] = [.2, .2, .2, 1.0]
-                elif 15 <= h <= 28:
-                    color[0] = [.3, .3, .3]#, 1.0]
-                    #color[1] = [.3, .3, .3, 1.0]
-                elif 29 <= h <= 51:
-                    color[0] = [.4, .4, .4]#, 1.0]
-                    #color[1] = [.4, .4, .4, 1.0]
-                elif h >= 52:
-                    color[0] = [.5, .5, .5]#, 1.0]
-                    #color[1] = [.5, .5, .5, 1.0]
-                    
-                if self.colours is not None:
-                    self.colours = numpy.concatenate([self.colours, color,color,color,color,color,color])
-                else:
-                    self.colours = color
-                    self.colours = numpy.concatenate([self.colours, color,color,color,color,color])
+                for v in vertex:
+                    h = (v[1] / MAP_HEIGHT_SIZE)
+                    if 0 <= h <= 5:
+                        color[0] = [.625, .625, .625]
+                    elif 6 <= h <= 14 :
+                        color[0] = [.725, .725, .725]
+                    elif 15 <= h <= 28:
+                        color[0] = [.8, .8, .8]
+                    elif 29 <= h <= 51:
+                        color[0] = [.85, .85, .85]
+                    elif 52 <= h >= 100:
+                        color[0] = [.9, .9, .9]
+                    else:
+                        color[0] = [.95, .95, .95]
 
+                    if self.colors is not None:
+                        self.colors = numpy.concatenate([self.colors, color])
+                    else:
+                        self.colors = color
 
         self.log.info("map loaded")
         print(len(self.vertices))
         print(len(self.textures))
-        print(len(self.colours))
+        print(len(self.colors))
 
-        #self.vertices_gl = vbo.VBO(self.vertices)
-        #self.colours_gl = vbo.VBO(self.colours)
+        #self.vertices_gl = vbo.VBO(self.vertices) # TODO use vbos
+        #self.colors_gl = vbo.VBO(self.colors)
         #self.textures_gl = vbo.VBO(self.textures)
 
     def GetTileType(self, c, base): # tile class
@@ -323,7 +336,7 @@ class OdmMap(object):
                           'idx': s_idx }# 16 bytes
         print(self.tileinfo)
         self.tex_names = {}
-        for i in range(256):  ### this is a mess
+        for i in range(256):  ### TODO merge with other implementation
              index = 0
              if i >= 0xc6: # roads
                  index = i - 0xc6 + s_idx[7]
@@ -362,28 +375,37 @@ class OdmMap(object):
         print(len(self.imglist))
 
     def Draw(self):
+        self.DrawSky()
+        self.DrawTerrain()
+        self.DrawGameArea()
+        self.DrawAxis()
+
+    def DrawTerrain(self):
         glBindTexture(GL_TEXTURE_2D, self.tm.textures[self.tex_name]['id'])
+        glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
         glPushMatrix()
-        #glEnableClientState(GL_NORMAL_ARRAY)
+
         glEnableClientState(GL_TEXTURE_COORD_ARRAY)
         glEnableClientState(GL_COLOR_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
         glEnableClientState(GL_VERTEX_ARRAY)
 
-        #glNormalPointer(3, GL_FLOAT, 0, self.normals)
         glTexCoordPointer(2, GL_FLOAT, 0, self.textures)
-        glColorPointer(3, GL_FLOAT, 0, self.colours)
+        glColorPointer(3, GL_FLOAT, 0, self.colors)
+        #glNormalPointer(3, GL_FLOAT, self.normals)
         glVertexPointer(3, GL_FLOAT, 0, self.vertices)
 
         #vertices_gl.bind()
-        #colours_gl.bind()
+        #colors_gl.bind()
         #glVertexPointer(2, GL_FLOAT, 0, self.vertices_gl)
-        #glColorPointer(2, GL_FLOAT, 0, self.colours_gl)
+        #glColorPointer(2, GL_FLOAT, 0, self.colors_gl)
 
         glDrawArrays(GL_TRIANGLES, 0, len(self.vertices))
 
-        glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_TEXTURE_COORD_ARRAY)
         glDisableClientState(GL_COLOR_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
         glEnable (GL_BLEND)
         glPopMatrix()
 
@@ -410,6 +432,39 @@ class OdmMap(object):
         glEnable(GL_TEXTURE_2D)
         #glEnable(GL_DEPTH_TEST)
         glEnable (GL_BLEND)
+        glPopMatrix();
+
+    def DrawSky(self):
+        glBindTexture(GL_TEXTURE_2D, self.tm.textures["sky07"]['id']) # TODO load texture in costructor.
+        glPushMatrix();
+        glScaled(60000,60000,60000);
+        glRotatef(self.sky_rot, 0.0, 1.0, 0.0);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+        glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+        glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0,  1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0,  1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f(-1.0, -1.0, -1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f( 1.0, -1.0, -1.0);
+        glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
+        glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
+        glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
+        glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
+        glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
+        glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
+        glEnd();
         glPopMatrix();
 
     def DrawAxis(self):

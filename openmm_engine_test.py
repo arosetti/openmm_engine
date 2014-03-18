@@ -13,9 +13,13 @@ from Engine import *
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+from OpenGL.GL.shaders import *
+
 from PIL import Image
 
 import threading, time
+
+version = b'0.3.3'
 
 tm = 0 # texmanager
 lm = 0 # lodmanager
@@ -30,8 +34,6 @@ shf = float(sh) / 480.0
 
 cam = 0 # camera
 
-sky_rot = 0.0
-
 gobval = ('a', 'b', 'c', 'd', 'e', 'f')
 gob = 0
 
@@ -42,11 +44,9 @@ def threadGob():
         gob = (gob + 1) % 6
 
 def threadInc():
-    global sky_rot
+    global gravity
     while True:
-        time.sleep(.001)
-        sky_rot = (sky_rot + 0.0007) % 360.0
-
+        time.sleep(.01)
         if gravity:
             h = (m.TerrainHeight(cam.posx, cam.posz) +
                 m.TerrainHeight(cam.posx + 1, cam.posz) +
@@ -100,6 +100,7 @@ def KeyPressed(*args):
 
 def DrawBox(x, y, z, scale):
     glBindTexture(GL_TEXTURE_2D, tm.textures["cbsm"]['id']);
+    glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     glPushMatrix();
     glTranslatef(x,y,z)
     glEnable(GL_DEPTH_TEST)
@@ -132,53 +133,19 @@ def DrawBox(x, y, z, scale):
     glEnd();
     glPopMatrix();
 
-def DrawSky(): # TODO put in OdmMap
-    glBindTexture(GL_TEXTURE_2D, tm.textures["sky07"]['id']);
-    glPushMatrix();
-    glScaled(60000,60000,60000);
-    glRotatef(sky_rot, 0.0, 1.0, 0.0);
-    glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0,  1.0,  1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0,  1.0,  1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0, -1.0, -1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0, -1.0, -1.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f( 1.0, -1.0, -1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f( 1.0,  1.0, -1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f( 1.0,  1.0,  1.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f( 1.0, -1.0,  1.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f(-1.0, -1.0, -1.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f(-1.0, -1.0,  1.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(-1.0,  1.0,  1.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f(-1.0,  1.0, -1.0);
-    glEnd();
-    glPopMatrix();
-
-def DrawText(msg):
+def DrawText(msg, x , y):
     glPushMatrix();
     #glDisable(GL_COLOR_MATERIAL)
     #glDisable(GL_LIGHTING)
     glDisable(GL_BLEND)
     glDisable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
-    hoff = sh - shf*(tm.textures["border2.pcx"]['h'] + 5)
 
     off = 0
     glColor3f(1, 1, 1)
     for c in msg:
         off += 9
-        glRasterPos2f(18 + off, hoff)
+        glRasterPos2f(x + off, y)
         glutBitmapCharacter(GLUT_BITMAP_8_BY_13, ord(c))
     glEnable(GL_TEXTURE_2D)
     glPopMatrix();
@@ -201,6 +168,7 @@ def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager
     glPushMatrix()
     glEnable(GL_DEPTH_TEST)
     glBindTexture(GL_TEXTURE_2D, texture) # this would be a texture relative to the angle between camera and sprite rotation.
+    glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     r = float(h)/float(w)
     glTranslatef(x, y, z)
     glScaled(scale, scale, scale)
@@ -214,14 +182,16 @@ def DrawSprite(texture, w, h, x, y, z, scale): #TODO future Sprite,SpriteManager
     glPopMatrix()
 
 def InitGL():
+    print ("Vendor:   {}".format(glGetString(GL_VENDOR).decode("utf-8")) )
+    print ("Renderer: {}".format(glGetString(GL_RENDERER).decode("utf-8")) )
+    print ("OpenGL Version:  {}".format(glGetString(GL_VERSION).decode("utf-8")) )
+    print ("Shader Version:  {}".format(glGetString(GL_SHADING_LANGUAGE_VERSION).decode("utf-8")) )
+
+    glClearDepth(1.0)
     glClearColor(0.1, 0.1, 0.1, 1.0)
-    #glClearDepth(1.0)
     glDepthFunc(GL_LESS) # LEQUAL
     glShadeModel(GL_SMOOTH) # FLAT
-    #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-    #glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    #glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 def Set2DMode():
     glMatrixMode(GL_PROJECTION)
@@ -254,13 +224,14 @@ def SetMiniMapMode():
     glLoadIdentity()
     glEnable(GL_TEXTURE_2D)
     glDisable(GL_DEPTH_TEST)
-    #glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-    #glEnable (GL_BLEND)
-    #glBlendFunc ( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-    #glClearColor(.3, 1.0, .3, 0.0)
 
 def Set3DMode(w,h):
     global sw,sh
+
+    glClearDepth(1.0)
+    glClearColor(0.1, 0.1, 0.1, 1.0)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glViewport(0, h, sw - w, sh-h)
@@ -270,7 +241,6 @@ def Set3DMode(w,h):
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D)
     glEnable(GL_DEPTH_TEST)
-    #glDisable(GL_COLOR_MATERIAL)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -289,16 +259,13 @@ def Set3DMode(w,h):
 def Render():
     global m,swf,shf
     global gobval,gob
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     max_w = int((tm.textures["border1.pcx"]['w']) * swf)
     max_h = int((tm.textures["footer"]['h'] + tm.textures["border2.pcx"]['h'] - 5) * shf)
     Set3DMode(max_w, max_h)
-    DrawSky()
 
     m.Draw()
-    m.DrawGameArea()
-    m.DrawAxis()
+
     DrawBox(-2000, m.TerrainHeight(-1000, 1000)+10,1500, 90)
     t = tm.textures["gobfi{}0".format(gobval[gob])]
     DrawSprite(t['id'], t['w'], t['h'], -1000.0, m.TerrainHeight(-1000, 1000)+10,1000, 512 )
@@ -313,7 +280,7 @@ def Render():
                 0.0,
                 (sh - shf*(float(tm.textures["border2.pcx"]['h']+t['h'] - 5)) ) )
 
-    t = tm.textures["border2.pcx"] # bug in pillow library for this image (fixed in git version of pillow)
+    t = tm.textures["border2.pcx"] # bug in pillow-2.3.0 for odd sized images, fixed in git version.
     Draw2DImage(t['id'], t['w'], t['h'], 0.0, sh - shf*float(t['h']))
 
     t = tm.textures["border1.pcx"]
@@ -335,8 +302,8 @@ def Render():
     t = tm.textures["eradcate"]
     Draw2DImage(t['id'], t['w'], t['h'], swf*135.0, shf*383.0) # distance ~113px
 
-    #segfault
-    DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f})".format(cam.posx, cam.posy, cam.posz, cam.angle, cam.angle2))
+    DrawText("pos ({0:.2f},{1:.2f},{2:.2f}) ang ({3:.2f} {4:.2f})".format(cam.posx, cam.posy, cam.posz, cam.angle, cam.angle2),
+             18, sh - shf*(tm.textures["border2.pcx"]['h'] + 5))
 
     glutSwapBuffers()
 
@@ -344,9 +311,14 @@ def main():
     global window
     glutInit(sys.argv)
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA | GLUT_DEPTH)
-    glutInitWindowSize(sw,sh)
-    glutInitWindowPosition(200,200)
-    window = glutCreateWindow(b'Openmm_engine test')
+    glutInitWindowSize(sw, sh)
+    glutInitWindowPosition(600, 300)
+    window = glutCreateWindow(b'Openmm Engine Demo v ' + version )
+    glutDisplayFunc(Render)
+    glutIdleFunc(Render)
+    glutKeyboardFunc(KeyPressed) # glutKeyboardUpFunc
+    glutSpecialFunc(KeyPressed)
+    InitGL()
 
     if not os.path.exists('tmp'):
         os.makedirs('tmp')
@@ -356,11 +328,7 @@ def main():
     lm.LoadLods('data')
     tm = TextureManager(lm)
     #tm.LoadTexture ("icons", "mm6title.pcx")
-    #tm.LoadTexture ("bitmaps", "bemob2b") # wall
-    #tm.LoadTexture ("bitmaps", "d2ceil4") # ceil
-    #tm.LoadTexture ("bitmaps", "bcsctr")  # floor
     tm.LoadTexture ("bitmaps", "cbsm")
-    tm.LoadTexture ("bitmaps", "sky07")
     tm.LoadTexture ("icons", "border1.pcx")
     tm.LoadTexture ("icons", "border2.pcx")
     tm.LoadTexture ("icons", "border3")
@@ -385,12 +353,6 @@ def main():
     global cam
     cam = Camera()
 
-    glutDisplayFunc(Render)
-    glutIdleFunc(Render)
-    glutKeyboardFunc(KeyPressed) # glutKeyboardUpFunc
-    glutSpecialFunc(KeyPressed)
-    InitGL()
-
     t1 = threading.Thread(target=threadInc)
     t1.daemon = True
     t1.start()
@@ -402,4 +364,6 @@ def main():
     glutMainLoop()
 
 if __name__ == "__main__":
+    print("Press 'ESC' to quit")
+    print("Press 'g' to togle gravity")
     main()

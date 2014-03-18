@@ -70,7 +70,7 @@ class Camera(object):
 
     def Fall(self, h):
         if (self.posy - 300) > h:
-            self.fall += .05
+            self.fall += .4  # TODO implement "real" gravity a=9.81 ...
             self.posy -= self.fall
         else:
             self.fall = 0
