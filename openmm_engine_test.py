@@ -210,16 +210,13 @@ def SetMiniMapMode():
     global sw,sh
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    w = 200
-    glViewport(sw-w, sh-2*w, w, w)
-    #gluPerspective(50.0, 1.0, 512, 512*1000)
-    #glFrustum(0,w,w,0,1.,10.)
-    glOrtho(3,1,3,1,1,3);
-    #glOrtho(0,256,256,0,-1,1)
-    #gluLookAt(
-    #    0,2,0,
-    #    0,0,0,
-    #    0,0,-1)
+    w = 270
+    glViewport(sw-w, sh-w, w, w)
+    gluPerspective(45.0, 1, 1, 512*250)
+    gluLookAt( 0.0, 20000.0, 0.8,
+               0.0, 0.1, 0.0,
+               0.0, 1.0, 0.0 );
+    glTranslatef(-cam.posx, 0.0, -cam.posz)
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     glEnable(GL_TEXTURE_2D)
@@ -231,7 +228,6 @@ def Set3DMode(w,h):
     glClearDepth(1.0)
     glClearColor(0.1, 0.1, 0.1, 1.0)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     glViewport(0, h, sw - w, sh-h)
@@ -270,8 +266,8 @@ def Render():
     t = tm.textures["gobfi{}0".format(gobval[gob])]
     DrawSprite(t['id'], t['w'], t['h'], -1000.0, m.TerrainHeight(-1000, 1000)+10,1000, 512 )
 
-    #SetMiniMapMode()
-    #m.Draw()
+    SetMiniMapMode()
+    m.Draw() # TODO do no re-render the map like this...
 
     Set2DMode()
 
