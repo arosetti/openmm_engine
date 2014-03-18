@@ -6,7 +6,8 @@ Might and Magic 6-7-8 engine attempt.
 - Author   : Alessandro Rosetti alessandro.rosetti@gmail.com
 - License  : GPLv2 License
 
-[[New Youtube video]](https://www.youtube.com/watch?v=HxxwzMQU_LI)
+[[Second Youtube video]](https://www.youtube.com/watch?v=HxxwzMQU_LI)
+
 [[First Youtube video]](http://www.youtube.com/watch?v=w5J2rvrX_14)
 
 ![ScreenShot](/res/screen_road_to_castle_ironfist.png)
@@ -19,14 +20,13 @@ Requirements
 - pyopengl
 - numpy
 
+WARNING: lod classes tested on mm6,7,8 a few files are still failing to be extracted.
 
-WARNING: lod classes tested on mm6,7,8 but a few files are still failing to be extracted.
-
-WARNING2: this program is being developed on linux. It's not currently being ever tested on other systems
+WARNING2: this program is being developed on linux. It's not currently being ever tested on other systems.
 
 Testing
 ========
-Put the "data" directory containing lod files in the same directory of the scripts.
+Put the "data" directory containing lod files in the same directory of the scripts and create a tmp directory.
 
 You can play with the class methods, extract all data or search specific files.
 - run: ./lod_test.py
@@ -34,19 +34,19 @@ You can play with the class methods, extract all data or search specific files.
 
 MM6 Opengl Engine Demo
 ----------
-This is a simple messy opengl example with python3. It loads resources from MM6 lod files
-and uses as textures,map,sprites :D
+This is a simple opengl demo. It loads resources from the original MM6 lod files :D
 
-(the original example code has been taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
+(the original opengl code has been taken from http://openglsamples.sourceforge.net/ and adapted to my needs)
 
 WARNING: use data from MM6! (tested on gentoo linux)
 - run: ./openmm\_engine\_test.py \<mapcode\>
 
 Mapcode is a 2 char coordinate of the map of Enroth.
 The first char is one of (a b c d e). The second char is one of (1 2 3).
-For example 'e3' is new New Sorpigal which is default if you don't specify the code
+For example 'e3' is new New Sorpigal which is default if you don't specify the parameter.
 
-The keyboard are mapped to the movement system of MMVI. wasd, pag up,down ins...etc.
+The keyboard is mapped to the movement system of MMVI. wasd, pag up,down ins...etc.
+use g to togle gravity on and off.
 That's really bad for a laptop, sorry for now...
 
 as you can see the map is not yet completed.
@@ -57,7 +57,7 @@ rudimental sprite display and with animation of a goblin
 
 ![ScreenShot](/res/screen_ui.png)
 
-Todo 
+Todo
 ========
 - LodManager class: cache of game data, create new lod files, other helpful functions.
 - LodArchive: Threadsafe Lod* class ?
@@ -85,9 +85,8 @@ I found very helpful the documentations and the code of other projects like mm_m
 also this link: http://rewiki.regengedanken.de/wiki/Might_and_Magic_6
 
 
-Insane future works
+Insane future works (sure, dream on... :P)
 ========
-(sure, dream on... :P)
 - FULL python/c implementation of 3DO's Might and Magic engine for mm6-7-8 and mods.
 - new adventures from scratch!
 - redo all 2.5D sprites to 3D models.
@@ -95,5 +94,5 @@ Insane future works
 
 Disclaimer
 ========
-I own these games, if you want to use this script buy the games. look at gog.com
+I own these games, if you want to use this script buy the games. look at gog.com or ebay..
 All trademarks, product names are the property of their respective owners!
