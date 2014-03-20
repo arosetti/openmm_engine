@@ -212,7 +212,7 @@ def SetMiniMapMode():
     glLoadIdentity()
     w = 270
     glViewport(sw-w, sh-w, w, w)
-    gluPerspective(45.0, 1, 1, 512*250)
+    gluPerspective(60.0, 1, 1, 512*250)
     gluLookAt( 0.0, 20000.0, 0.8,
                0.0, 0.1, 0.0,
                0.0, 1.0, 0.0 );
