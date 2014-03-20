@@ -10,7 +10,7 @@ Might and Magic 6-7-8 engine attempt.
 
 [[First Youtube video]](http://www.youtube.com/watch?v=w5J2rvrX_14)
 
-![ScreenShot](/res/screen_road_to_castle_ironfist.png)
+![ScreenShot](https://dl.dropboxusercontent.com/u/2564515/new_sorpigal_1.png)
 
 Requirements
 ========
@@ -51,11 +51,7 @@ That's really bad for a laptop, sorry for now...
 
 as you can see the map is not yet completed.
 
-![ScreenShot](/res/new_sorpigal.png)
-
-rudimental sprite display and with animation of a goblin
-
-![ScreenShot](/res/screen_ui.png)
+![ScreenShot](https://dl.dropboxusercontent.com/u/2564515/new_sorpigal_2.png)
 
 Todo
 ========
